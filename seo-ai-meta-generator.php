@@ -3,7 +3,7 @@
  * Plugin Name: SEO AI Meta Generator
  * Plugin URI: https://wordpress.org/plugins/seo-ai-meta-generator/
  * Description: AI-powered SEO meta title and description generator for WordPress posts. Uses GPT-4 to create optimized meta tags that boost search engine rankings. Free tier: 10 posts/month.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Benjamin Oats
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -46,7 +46,7 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG && PHP_VERSION_ID >= 80300 ) {
 	error_reporting( $error_reporting & ~E_DEPRECATED );
 }
 
-define( 'SEO_AI_META_VERSION', '1.0.0' );
+define( 'SEO_AI_META_VERSION', '1.1.0' );
 define( 'SEO_AI_META_PLUGIN_FILE', __FILE__ );
 define( 'SEO_AI_META_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SEO_AI_META_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

@@ -5,6 +5,39 @@ All notable changes to SEO AI Meta Generator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-01-XX
+
+### Added
+- **SEO Score Indicator** - Real-time SEO scoring (0-100) with visual feedback
+- **SEO Preview** - Google-style search result preview with live updates
+- **Copy to Clipboard** - One-click copy buttons for title and description
+- **Keyboard Shortcuts** - Ctrl+G/Cmd+G to quickly generate meta tags
+- **Undo Last Generation** - Restore previous meta tags with one click
+- **Regenerate Button** - Quick access to regenerate existing meta tags
+- **Bulk Optimize** - New tab to optimize existing meta tags in bulk
+- **Meta Templates** - Variable system ({{title}}, {{date}}, {{category}}, etc.)
+- **Export/Import** - CSV export and import functionality
+- **Duplicate Detection** - Warns when duplicate meta titles are found
+- **Improved Checkout UX** - Auto-redirect back to dashboard after opening Stripe
+
+### Improved
+- Checkout redirect page now automatically returns to dashboard after 2 seconds
+- Better error handling and user feedback
+- Live SEO score updates as user types
+- Enhanced meta box UI with copy buttons and undo functionality
+- Code cleanup: organized test files and documentation
+
+### Changed
+- Debug logging now only shows when WP_DEBUG is enabled
+- Test files moved to `tests/temp/` folder
+- Documentation organized into `docs/` folder
+
+### Technical
+- Added `class-meta-template-processor.php` for template handling
+- Enhanced SEO validator with score calculation
+- Improved duplicate detection with post links
+- Better checkout redirect UX with spinner and auto-return
+
 ## [1.0.0] - 2024-01-01
 
 ### Added
