@@ -1,0 +1,38 @@
+# WordPress
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Dependencies
+node_modules/
+vendor/
+composer.json
+composer.lock
+package.json
+package-lock.json
+
+# Environment
+.env
+.env.local
+*.log
+
+# Build
+dist/
+build/
+*.zip
+
+# Tests
+coverage/
+.phpunit.result.cache
+
+# Temporary
+*.tmp
+*.bak
+*.backup
+

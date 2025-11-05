@@ -1,0 +1,449 @@
+/* ===================================================================
+   SEO AI Meta Generator - Metabox Styles
+   Consistent with Dashboard Design System
+   =================================================================== */
+
+/* Import design tokens from dashboard */
+:root {
+	--seo-primary: #14b8a6;
+	--seo-primary-dark: #0d9488;
+	--seo-primary-darker: #0f766e;
+	--seo-primary-pale: #ecfdf5;
+	--seo-success: #10b981;
+	--seo-success-bg: #d1fae5;
+	--seo-warning: #f59e0b;
+	--seo-warning-bg: #fef3c7;
+	--seo-error: #ef4444;
+	--seo-error-bg: #fee2e2;
+	--seo-gray-50: #f9fafb;
+	--seo-gray-100: #f3f4f6;
+	--seo-gray-200: #e5e7eb;
+	--seo-gray-300: #d1d5db;
+	--seo-gray-400: #9ca3af;
+	--seo-gray-500: #6b7280;
+	--seo-gray-600: #4b5563;
+	--seo-gray-700: #374151;
+	--seo-black: #1a1a1a;
+	--seo-white: #ffffff;
+	--font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	--space-1: 0.25rem;
+	--space-2: 0.5rem;
+	--space-3: 0.75rem;
+	--space-4: 1rem;
+	--space-5: 1.25rem;
+	--space-6: 1.5rem;
+	--radius: 0.375rem;
+	--radius-md: 0.5rem;
+	--radius-lg: 0.75rem;
+	--radius-full: 9999px;
+	--shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+	--shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+	--shadow-primary: 0 4px 12px rgba(20, 184, 166, 0.3);
+	--shadow-primary-lg: 0 6px 16px rgba(20, 184, 166, 0.4);
+	--transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+	--transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===================================================================
+   METABOX CONTAINER
+   =================================================================== */
+.seo-ai-meta-metabox {
+	background: var(--seo-white);
+	padding: var(--space-4);
+	font-family: var(--font-sans);
+}
+
+/* ===================================================================
+   USAGE BAR
+   =================================================================== */
+.seo-ai-meta-usage-bar {
+	margin-bottom: var(--space-5);
+	padding: var(--space-4);
+	background: linear-gradient(135deg, var(--seo-gray-50) 0%, var(--seo-white) 100%);
+	border: 1px solid var(--seo-gray-200);
+	border-radius: var(--radius-lg);
+	border-left: 3px solid var(--seo-primary);
+}
+
+.seo-ai-meta-usage-bar p {
+	margin: 0 0 var(--space-2) 0;
+	font-size: 14px;
+	color: var(--seo-gray-700);
+	font-weight: 500;
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+}
+
+.seo-ai-meta-usage-bar strong {
+	font-weight: 700;
+	color: var(--seo-black);
+}
+
+.seo-ai-meta-plan-badge {
+	background: linear-gradient(135deg, var(--seo-primary) 0%, var(--seo-primary-dark) 100%);
+	color: var(--seo-white);
+	padding: var(--space-1) var(--space-3);
+	border-radius: var(--radius-full);
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	box-shadow: var(--shadow-primary);
+	display: inline-flex;
+	align-items: center;
+}
+
+/* Progress Bar */
+.seo-ai-meta-usage-bar > div:last-child {
+	background: var(--seo-gray-200);
+	height: 20px;
+	border-radius: var(--radius-full);
+	overflow: hidden;
+	position: relative;
+	box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.seo-ai-meta-usage-bar > div:last-child > div {
+	height: 100%;
+	border-radius: var(--radius-full);
+	transition: width var(--transition-slow);
+	background: linear-gradient(90deg, var(--seo-primary) 0%, var(--seo-primary-dark) 100%);
+	box-shadow: 0 0 10px rgba(20, 184, 166, 0.5);
+}
+
+/* Warning state for high usage */
+.seo-ai-meta-usage-bar > div:last-child > div[style*="background: #dc3232"],
+.seo-ai-meta-usage-bar > div:last-child > div[style*="background:#dc3232"] {
+	background: linear-gradient(90deg, var(--seo-error) 0%, #dc2626 100%) !important;
+	box-shadow: 0 0 10px rgba(239, 68, 68, 0.5) !important;
+}
+
+/* Success state for low usage */
+.seo-ai-meta-usage-bar > div:last-child > div[style*="background: #46b450"],
+.seo-ai-meta-usage-bar > div:last-child > div[style*="background:#46b450"] {
+	background: linear-gradient(90deg, var(--seo-success) 0%, #059669 100%) !important;
+	box-shadow: 0 0 10px rgba(16, 185, 129, 0.5) !important;
+}
+
+/* ===================================================================
+   LIMIT NOTICE
+   =================================================================== */
+.seo-ai-meta-limit-notice {
+	background: linear-gradient(135deg, var(--seo-warning-bg) 0%, #fde68a 100%);
+	border-left: 4px solid var(--seo-warning);
+	border-radius: var(--radius-lg);
+	padding: var(--space-4);
+	margin-bottom: var(--space-5);
+	box-shadow: var(--shadow-md);
+}
+
+.seo-ai-meta-limit-notice p {
+	margin: 0;
+	color: #92400e;
+	font-size: 14px;
+	line-height: 1.6;
+}
+
+.seo-ai-meta-limit-notice strong {
+	display: block;
+	font-weight: 700;
+	font-size: 15px;
+	margin-bottom: var(--space-2);
+	color: #78350f;
+}
+
+.seo-ai-meta-limit-notice .button {
+	margin-top: var(--space-3);
+	background: linear-gradient(135deg, var(--seo-primary) 0%, var(--seo-primary-dark) 100%);
+	color: var(--seo-white);
+	border: none;
+	padding: var(--space-2) var(--space-4);
+	border-radius: var(--radius-md);
+	font-weight: 600;
+	box-shadow: var(--shadow-primary);
+	transition: all var(--transition-base);
+	text-shadow: none;
+	cursor: pointer;
+}
+
+.seo-ai-meta-limit-notice .button:hover {
+	background: linear-gradient(135deg, var(--seo-primary-dark) 0%, var(--seo-primary-darker) 100%);
+	box-shadow: var(--shadow-primary-lg);
+	transform: translateY(-1px);
+	color: var(--seo-white);
+}
+
+/* ===================================================================
+   ACTIONS SECTION
+   =================================================================== */
+.seo-ai-meta-actions {
+	margin-bottom: var(--space-5);
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	flex-wrap: wrap;
+}
+
+#seo-ai-meta-generate-btn {
+	background: linear-gradient(135deg, var(--seo-primary) 0%, var(--seo-primary-dark) 100%);
+	color: var(--seo-white);
+	border: none;
+	padding: var(--space-3) var(--space-6);
+	border-radius: var(--radius-md);
+	font-size: 14px;
+	font-weight: 600;
+	box-shadow: var(--shadow-primary);
+	transition: all var(--transition-base);
+	cursor: pointer;
+	text-shadow: none;
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+#seo-ai-meta-generate-btn:hover:not(:disabled) {
+	background: linear-gradient(135deg, var(--seo-primary-dark) 0%, var(--seo-primary-darker) 100%);
+	box-shadow: var(--shadow-primary-lg);
+	transform: translateY(-1px);
+	color: var(--seo-white);
+}
+
+#seo-ai-meta-generate-btn:active:not(:disabled) {
+	transform: translateY(0);
+}
+
+#seo-ai-meta-generate-btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+	transform: none;
+}
+
+#seo-ai-meta-generate-btn:focus {
+	outline: 2px solid var(--seo-primary);
+	outline-offset: 2px;
+}
+
+/* Spinner */
+#seo-ai-meta-spinner {
+	float: none !important;
+	margin: 0 !important;
+}
+
+/* Messages */
+#seo-ai-meta-messages {
+	width: 100%;
+	margin-top: var(--space-3);
+}
+
+#seo-ai-meta-messages > div {
+	padding: var(--space-3);
+	border-radius: var(--radius-md);
+	font-size: 14px;
+	font-weight: 500;
+	margin-bottom: var(--space-2);
+}
+
+#seo-ai-meta-messages .notice-success,
+#seo-ai-meta-messages .success {
+	background: var(--seo-success-bg);
+	color: #065f46;
+	border-left: 4px solid var(--seo-success);
+}
+
+#seo-ai-meta-messages .notice-error,
+#seo-ai-meta-messages .error {
+	background: var(--seo-error-bg);
+	color: #991b1b;
+	border-left: 4px solid var(--seo-error);
+}
+
+/* ===================================================================
+   PREVIEW SECTION
+   =================================================================== */
+.seo-ai-meta-preview {
+	background: var(--seo-white);
+}
+
+.seo-ai-meta-preview > div {
+	margin-bottom: var(--space-5);
+}
+
+.seo-ai-meta-preview > div:last-child {
+	margin-bottom: 0;
+}
+
+/* Labels */
+.seo-ai-meta-preview label {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: var(--space-2);
+	font-size: 14px;
+}
+
+.seo-ai-meta-preview label strong {
+	font-weight: 700;
+	color: var(--seo-black);
+}
+
+#seo-ai-meta-title-count,
+#seo-ai-meta-description-count {
+	color: var(--seo-gray-500);
+	font-weight: 500;
+	font-size: 13px;
+}
+
+/* Input Fields */
+#seo-ai-meta-title {
+	width: 100%;
+	padding: var(--space-3);
+	border: 1px solid var(--seo-gray-300);
+	border-radius: var(--radius-md);
+	font-size: 14px;
+	font-family: var(--font-sans);
+	transition: all var(--transition-base);
+	background: var(--seo-white);
+	line-height: 1.5;
+}
+
+#seo-ai-meta-description {
+	width: 100%;
+	padding: var(--space-3);
+	border: 1px solid var(--seo-gray-300);
+	border-radius: var(--radius-md);
+	font-size: 14px;
+	font-family: var(--font-sans);
+	transition: all var(--transition-base);
+	background: var(--seo-white);
+	line-height: 1.6;
+	resize: vertical;
+	min-height: 80px;
+}
+
+#seo-ai-meta-title:focus,
+#seo-ai-meta-description:focus {
+	outline: none;
+	border-color: var(--seo-primary);
+	box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+}
+
+#seo-ai-meta-title::placeholder,
+#seo-ai-meta-description::placeholder {
+	color: var(--seo-gray-400);
+	font-style: italic;
+}
+
+/* Description text */
+.seo-ai-meta-preview .description {
+	margin-top: var(--space-2);
+	font-size: 13px;
+	color: var(--seo-gray-500);
+	line-height: 1.5;
+	font-style: normal;
+}
+
+/* ===================================================================
+   META INFO
+   =================================================================== */
+.seo-ai-meta-meta-info {
+	margin-top: var(--space-5);
+	padding-top: var(--space-4);
+	border-top: 1px solid var(--seo-gray-200);
+	color: var(--seo-gray-500);
+	font-size: 12px;
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.seo-ai-meta-meta-info::before {
+	content: "ℹ️";
+	font-style: normal;
+}
+
+/* ===================================================================
+   CHARACTER COUNT STATES
+   =================================================================== */
+/* Warning state when approaching limit (>90%) */
+#seo-ai-meta-title-count.warning,
+#seo-ai-meta-description-count.warning {
+	color: var(--seo-warning);
+	font-weight: 600;
+}
+
+/* Error state when over limit */
+#seo-ai-meta-title-count.error,
+#seo-ai-meta-description-count.error {
+	color: var(--seo-error);
+	font-weight: 700;
+}
+
+/* ===================================================================
+   RESPONSIVE
+   =================================================================== */
+@media (max-width: 768px) {
+	.seo-ai-meta-metabox {
+		padding: var(--space-3);
+	}
+
+	.seo-ai-meta-actions {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	#seo-ai-meta-generate-btn {
+		width: 100%;
+		justify-content: center;
+	}
+
+	.seo-ai-meta-preview label {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: var(--space-1);
+	}
+}
+
+/* ===================================================================
+   ACCESSIBILITY
+   =================================================================== */
+.seo-ai-meta-metabox :focus-visible {
+	outline: 2px solid var(--seo-primary);
+	outline-offset: 2px;
+	border-radius: var(--radius);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}
+
+/* ===================================================================
+   WORDPRESS OVERRIDES
+   =================================================================== */
+/* Override WordPress button styles */
+.seo-ai-meta-metabox .button-primary {
+	background: linear-gradient(135deg, var(--seo-primary) 0%, var(--seo-primary-dark) 100%) !important;
+	border-color: var(--seo-primary) !important;
+	box-shadow: var(--shadow-primary) !important;
+	text-shadow: none !important;
+}
+
+.seo-ai-meta-metabox .button-primary:hover {
+	background: linear-gradient(135deg, var(--seo-primary-dark) 0%, var(--seo-primary-darker) 100%) !important;
+	border-color: var(--seo-primary-dark) !important;
+	box-shadow: var(--shadow-primary-lg) !important;
+}
+
+/* Ensure proper spacing in WordPress meta boxes */
+.postbox .inside .seo-ai-meta-metabox {
+	margin: 0;
+}
