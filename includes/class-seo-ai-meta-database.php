@@ -16,15 +16,6 @@ class SEO_AI_Meta_Database {
 	private static $db_version = '1.0.0';
 
 	/**
-	 * Get database version
-	 *
-	 * @return string
-	 */
-	public static function get_db_version() {
-		return get_option( 'seo_ai_meta_db_version', '0' );
-	}
-
-	/**
 	 * Create custom database tables
 	 */
 	public static function create_tables() {
@@ -174,23 +165,6 @@ class SEO_AI_Meta_Database {
 	}
 
 	/**
-	 * Delete setting
-	 *
-	 * @param string $key Setting key.
-	 * @return bool
-	 */
-	public static function delete_setting( $key ) {
-		global $wpdb;
-		$table = self::get_table_name( 'settings' );
-
-		return $wpdb->delete(
-			$table,
-			array( 'setting_key' => $key ),
-			array( '%s' )
-		) !== false;
-	}
-
-	/**
 	 * Get post meta
 	 *
 	 * @param int    $post_id Post ID.
@@ -261,23 +235,6 @@ class SEO_AI_Meta_Database {
 		$result = $wpdb->replace( $table, $insert_data, $formats );
 
 		return $result !== false;
-	}
-
-	/**
-	 * Delete post meta
-	 *
-	 * @param int $post_id Post ID.
-	 * @return bool
-	 */
-	public static function delete_post_meta( $post_id ) {
-		global $wpdb;
-		$table = self::get_table_name( 'post_meta' );
-
-		return $wpdb->delete(
-			$table,
-			array( 'post_id' => $post_id ),
-			array( '%d' )
-		) !== false;
 	}
 
 	/**
@@ -544,4 +501,3 @@ class SEO_AI_Meta_Database {
 		delete_option( 'seo_ai_meta_migration_complete' );
 	}
 }
-

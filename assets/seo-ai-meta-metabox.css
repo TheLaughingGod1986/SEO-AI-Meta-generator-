@@ -45,6 +45,33 @@
 	--transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+	:root {
+		--seo-gray-50: #1f2937;
+		--seo-gray-100: #374151;
+		--seo-gray-200: #4b5563;
+		--seo-gray-300: #6b7280;
+		--seo-gray-400: #9ca3af;
+		--seo-gray-500: #d1d5db;
+		--seo-gray-600: #e5e7eb;
+		--seo-gray-700: #f3f4f6;
+		--seo-white: #1f2937;
+		--seo-black: #f9fafb;
+	}
+}
+
+/* WordPress Admin Dark Mode */
+body.admin-color-midnight,
+body.admin-color-modern,
+body.admin-color-blue,
+body.admin-color-coffee,
+body.admin-color-ectoplasm,
+body.admin-color-ocean,
+body.admin-color-sunrise {
+	/* Respect WordPress admin color scheme */
+}
+
 /* ===================================================================
    METABOX CONTAINER
    =================================================================== */

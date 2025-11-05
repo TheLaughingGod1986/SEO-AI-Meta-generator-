@@ -9,6 +9,8 @@
 echo "🧪 Testing SEO AI Meta Backend & Stripe Connections\n";
 echo "==================================================\n\n";
 
+$plugin_dir = dirname(__DIR__, 2);
+
 $api_url = 'https://alttext-ai-backend.onrender.com';
 $pro_price_id = 'price_1SQ6a5Jl9Rm418cMx77q8KB9';
 $agency_price_id = 'price_1SQ6aTJl9Rm418cMQz47wCZ2';
@@ -126,8 +128,8 @@ echo "\n";
 // TEST 5: Verify API Client Configuration
 // ==========================================
 echo "5️⃣ Checking Plugin Configuration Files...\n";
-$api_client_file = __DIR__ . '/includes/class-api-client-v2.php';
-$core_file = __DIR__ . '/includes/class-seo-ai-meta-core.php';
+$api_client_file = $plugin_dir . '/includes/class-api-client-v2.php';
+$core_file = $plugin_dir . '/includes/class-seo-ai-meta-core.php';
 
 if (file_exists($api_client_file)) {
     echo "   ✅ API Client file exists\n";

@@ -6,7 +6,8 @@
  * Usage: wp eval-file test-backend-connection.php
  */
 
-require_once __DIR__ . '/includes/class-api-client-v2.php';
+$plugin_dir = dirname(__DIR__, 2);
+require_once $plugin_dir . '/includes/class-api-client-v2.php';
 
 echo "🧪 Testing SEO AI Meta Backend Connection\n";
 echo "==========================================\n\n";
@@ -110,4 +111,3 @@ echo "   If you see ❌, check:\n";
 echo "   1. Backend is deployed and accessible\n";
 echo "   2. Database migration has been run\n";
 echo "   3. API endpoints are returning correct responses\n";
-

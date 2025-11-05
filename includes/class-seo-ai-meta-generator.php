@@ -95,9 +95,7 @@ class SEO_AI_Meta_Generator {
 		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-meta-template-processor.php';
 		$result = SEO_AI_Meta_Template_Processor::apply_templates( $result, $post_id );
 
-		// Check for duplicate meta tags
 		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-seo-ai-meta-database.php';
-		$duplicate_check = self::check_duplicate_meta( $result['title'], $post_id );
 		
 		// Store meta in custom database table
 		$meta_data = array(
@@ -141,7 +139,6 @@ class SEO_AI_Meta_Generator {
 		$email_manager->send_welcome_email();
 
 		// Check and send usage warning if at 80%
-		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-usage-governance.php';
 		if ( SEO_AI_Meta_Usage_Governance::should_show_upgrade_prompt() ) {
 			$email_manager->send_limit_warning_email();
 		}
@@ -345,4 +342,3 @@ class SEO_AI_Meta_Generator {
 		return $prompt;
 	}
 }
-

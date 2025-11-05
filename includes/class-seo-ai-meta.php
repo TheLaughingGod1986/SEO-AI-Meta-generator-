@@ -80,6 +80,15 @@ class SEO_AI_Meta {
 		 */
 		require_once SEO_AI_META_PLUGIN_DIR . 'public/class-seo-ai-meta-public.php';
 
+		/**
+		 * REST API and WP-CLI
+		 */
+		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-rest-api.php';
+		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-database-cleanup.php';
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-wp-cli.php';
+		}
+
 		$this->loader = new SEO_AI_Meta_Loader();
 	}
 
@@ -116,6 +125,15 @@ class SEO_AI_Meta {
 		$this->loader->add_filter( 'allowed_redirect_hosts', $core, 'allow_stripe_redirects', 10, 2 );
 		$this->loader->add_action( 'admin_init', $core, 'register_ajax_handlers' );
 		$this->loader->add_action( 'admin_init', $core, 'maybe_handle_direct_checkout' );
+
+		// REST API
+		$this->loader->add_action( 'rest_api_init', 'SEO_AI_Meta_REST_API', 'register_routes' );
+
+		// Scheduled cleanup
+		$this->loader->add_action( 'seo_ai_meta_daily_cleanup', 'SEO_AI_Meta_Database_Cleanup', 'run_full_cleanup' );
+		if ( ! wp_next_scheduled( 'seo_ai_meta_daily_cleanup' ) ) {
+			wp_schedule_event( time(), 'daily', 'seo_ai_meta_daily_cleanup' );
+		}
 	}
 
 	/**

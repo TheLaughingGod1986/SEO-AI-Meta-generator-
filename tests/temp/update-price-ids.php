@@ -10,7 +10,8 @@
 require_once dirname( dirname( dirname( dirname( dirname( __FILE__ ) ) ) ) ) . '/wp-load.php';
 
 // Load plugin classes
-require_once __DIR__ . '/includes/class-seo-ai-meta-database.php';
+$plugin_dir = dirname(__DIR__, 2);
+require_once $plugin_dir . '/includes/class-seo-ai-meta-database.php';
 
 echo "SEO AI Meta Generator - Update Price IDs to Live Mode\n";
 echo "=====================================================\n\n";

@@ -12,7 +12,8 @@ $wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_t
 echo "✅ Cleared all SEO AI Meta transients\n";
 
 // Test backend connection
-require_once __DIR__ . '/includes/class-api-client-v2.php';
+$plugin_dir = dirname(__DIR__, 2);
+require_once $plugin_dir . '/includes/class-api-client-v2.php';
 $api_client = new SEO_AI_Meta_API_Client_V2();
 $status = $api_client->get_backend_status();
 
@@ -43,4 +44,3 @@ if (($status['status'] ?? '') === 'healthy') {
 echo "\n💡 Next steps:\n";
 echo "   1. Refresh the WordPress admin page\n";
 echo "   2. The error should be gone if backend is healthy\n";
-

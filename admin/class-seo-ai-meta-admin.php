@@ -170,15 +170,6 @@ class SEO_AI_Meta_Admin {
 	}
 
 	/**
-	 * Render the bulk generate page for this plugin.
-	 *
-	 * @since    1.0.0
-	 */
-	public function display_plugin_bulk_page() {
-		include_once 'partials/seo-ai-meta-admin-bulk.php';
-	}
-
-	/**
 	 * Register settings
 	 *
 	 * @since    1.0.0
@@ -420,4 +411,3 @@ class SEO_AI_Meta_Admin {
 		exit;
 	}
 }
-

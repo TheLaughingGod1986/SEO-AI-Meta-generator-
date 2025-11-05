@@ -6,8 +6,9 @@
  * Usage: wp eval-file test-connections.php
  */
 
-require_once __DIR__ . '/includes/class-api-client-v2.php';
-require_once __DIR__ . '/includes/class-seo-ai-meta-core.php';
+$plugin_dir = dirname(__DIR__, 2);
+require_once $plugin_dir . '/includes/class-api-client-v2.php';
+require_once $plugin_dir . '/includes/class-seo-ai-meta-core.php';
 
 echo "🧪 Testing SEO AI Meta Backend & Stripe Connections\n";
 echo "==================================================\n\n";
@@ -204,6 +205,5 @@ if ($backend_ok && $auth_ok && $price_ids_ok && $stripe_ok) {
 }
 
 echo "\n";
-
 
 

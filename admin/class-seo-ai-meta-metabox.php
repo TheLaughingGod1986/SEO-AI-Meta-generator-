@@ -175,11 +175,37 @@ class SEO_AI_Meta_Metabox {
 
 		$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
 		if ( ! $post_id ) {
-			wp_send_json_error( array( 'message' => __( 'Invalid post ID.', 'seo-ai-meta-generator' ) ) );
+			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-error-handler.php';
+			$error_data = SEO_AI_Meta_Error_Handler::get_user_message( 'post_not_found' );
+			wp_send_json_error( array(
+				'message' => $error_data['message'],
+				'action'  => $error_data['action'],
+				'code'    => 'post_not_found',
+			) );
 		}
 
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'seo-ai-meta-generator' ) ) );
+			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-error-handler.php';
+			$error_data = SEO_AI_Meta_Error_Handler::get_user_message( 'permission_denied' );
+			wp_send_json_error( array(
+				'message' => $error_data['message'],
+				'action'  => $error_data['action'],
+				'code'    => 'permission_denied',
+			) );
+		}
+
+		// Check rate limit
+		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-rate-limiter.php';
+		$rate_limit_check = SEO_AI_Meta_Rate_Limiter::check_rate_limit( 'generate' );
+		if ( is_wp_error( $rate_limit_check ) ) {
+			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-error-handler.php';
+			$error_data = SEO_AI_Meta_Error_Handler::get_user_message( $rate_limit_check );
+			wp_send_json_error( array(
+				'message' => $error_data['message'],
+				'action'  => $error_data['action'],
+				'code'    => $rate_limit_check->get_error_code(),
+				'data'    => $error_data['data'],
+			) );
 		}
 
 		$model = isset( $_POST['model'] ) ? sanitize_text_field( $_POST['model'] ) : null;
@@ -190,9 +216,13 @@ class SEO_AI_Meta_Metabox {
 		$result = $generator->generate( $post_id, $model );
 
 		if ( is_wp_error( $result ) ) {
+			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-error-handler.php';
+			$error_data = SEO_AI_Meta_Error_Handler::get_user_message( $result );
 			wp_send_json_error( array(
-				'message' => $result->get_error_message(),
+				'message' => $error_data['message'],
+				'action'  => $error_data['action'],
 				'code'    => $result->get_error_code(),
+				'data'    => $error_data['data'],
 			) );
 		}
 
