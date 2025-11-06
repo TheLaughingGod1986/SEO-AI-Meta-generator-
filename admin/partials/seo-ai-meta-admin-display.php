@@ -822,11 +822,11 @@ if ( empty( $settings ) ) {
 						</div>
 					</div>
 
-					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch;">
 						<!-- Export Section -->
-						<div style="padding: 24px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 10px; border: 1px solid #bfdbfe; position: relative; overflow: hidden; box-shadow: 0 1px 2px rgba(59, 130, 246, 0.1);">
+						<div style="padding: 24px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 10px; border: 1px solid #bfdbfe; position: relative; overflow: hidden; box-shadow: 0 1px 2px rgba(59, 130, 246, 0.1); display: flex; flex-direction: column;">
 							<div style="position: absolute; top: -30px; right: -30px; width: 100px; height: 100px; background: rgba(59, 130, 246, 0.08); border-radius: 50%;"></div>
-							<div style="position: relative; z-index: 1;">
+							<div style="position: relative; z-index: 1; display: flex; flex-direction: column; flex: 1;">
 								<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
 									<div style="width: 40px; height: 40px; border-radius: 10px; background: #3b82f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);">
 										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -842,9 +842,11 @@ if ( empty( $settings ) ) {
 								<p style="margin: 0 0 24px 0; font-size: 13px; color: #1e40af; line-height: 1.6; opacity: 0.9;">
 									<?php esc_html_e( 'Download all meta tags as a CSV file for backup or migration purposes', 'seo-ai-meta-generator' ); ?>
 								</p>
+								<!-- Spacer to align button with import section -->
+								<div style="flex: 1; min-height: 72px; margin-bottom: 12px;"></div>
 								<a href="<?php echo esc_url( add_query_arg( array( 'action' => 'seo_ai_meta_export', 'nonce' => wp_create_nonce( 'seo_ai_meta_export' ) ), admin_url( 'admin-post.php' ) ) ); ?>" 
 								   class="seo-ai-meta-export-btn"
-								   style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25); letter-spacing: -0.01em; box-sizing: border-box;"
+								   style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25); letter-spacing: -0.01em; box-sizing: border-box; margin-top: auto;"
 								   onmouseover="this.style.background='linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(59, 130, 246, 0.35)';"
 								   onmouseout="this.style.background='linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(59, 130, 246, 0.25)';">
 									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -858,9 +860,9 @@ if ( empty( $settings ) ) {
 						</div>
 
 						<!-- Import Section -->
-						<div style="padding: 24px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; border: 1px solid #86efac; position: relative; overflow: hidden; box-shadow: 0 1px 2px rgba(34, 197, 94, 0.1);">
+						<div style="padding: 24px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; border: 1px solid #86efac; position: relative; overflow: hidden; box-shadow: 0 1px 2px rgba(34, 197, 94, 0.1); display: flex; flex-direction: column;">
 							<div style="position: absolute; top: -30px; right: -30px; width: 100px; height: 100px; background: rgba(34, 197, 94, 0.08); border-radius: 50%;"></div>
-							<div style="position: relative; z-index: 1;">
+							<div style="position: relative; z-index: 1; display: flex; flex-direction: column; flex: 1;">
 								<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
 									<div style="width: 40px; height: 40px; border-radius: 10px; background: #22c55e; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3);">
 										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -876,7 +878,7 @@ if ( empty( $settings ) ) {
 								<p style="margin: 0 0 24px 0; font-size: 13px; color: #166534; line-height: 1.6; opacity: 0.9;">
 									<?php esc_html_e( 'Upload a CSV file to restore or import meta tags to your site', 'seo-ai-meta-generator' ); ?>
 								</p>
-								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 12px;">
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
 									<input type="hidden" name="action" value="seo_ai_meta_import">
 									<?php wp_nonce_field( 'seo_ai_meta_import', 'seo_ai_meta_import_nonce' ); ?>
 									<div style="position: relative;">
@@ -905,7 +907,7 @@ if ( empty( $settings ) ) {
 										</label>
 									</div>
 									<button type="submit" 
-											style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px 20px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 4px rgba(34, 197, 94, 0.25); letter-spacing: -0.01em; box-sizing: border-box;"
+											style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px 20px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 4px rgba(34, 197, 94, 0.25); letter-spacing: -0.01em; box-sizing: border-box; margin-top: auto;"
 											onmouseover="this.style.background='linear-gradient(135deg, #16a34a 0%, #15803d 100%)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(34, 197, 94, 0.35)';"
 											onmouseout="this.style.background='linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(34, 197, 94, 0.25)';">
 										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
