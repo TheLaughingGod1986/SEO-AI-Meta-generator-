@@ -227,12 +227,12 @@ if ( empty( $settings ) ) {
 							data-percentage="<?php echo esc_attr( min( 100, round( $usage_stats['percentage'] ) ) ); ?>"
 							style="stroke-dasharray: <?php echo esc_attr( 2 * M_PI * 54 ); ?>; stroke-dashoffset: <?php echo esc_attr( 2 * M_PI * 54 ); ?>;"
 						/>
-					</svg>
+						</svg>
 					<!-- Percentage text -->
 					<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
 						<div style="font-size: 32px; font-weight: 700; color: #1f2937; line-height: 1;">
 							<?php echo esc_html( min( 100, round( $usage_stats['percentage'] ) ) ); ?>%
-						</div>
+					</div>
 					</div>
 				</div>
 				
@@ -247,9 +247,9 @@ if ( empty( $settings ) ) {
 					<p style="font-size: 14px; color: #6b7280; margin: 0; line-height: 1.5;">
 						Resets <?php echo esc_html( $usage_stats['reset_date'] ); ?>
 					</p>
+					</div>
 				</div>
-			</div>
-
+				
 			<!-- SEO Impact Tracker Card -->
 			<div style="margin-bottom: 32px; padding: 28px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; position: relative;">
 				<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
@@ -259,21 +259,23 @@ if ( empty( $settings ) ) {
 					<h2 style="font-size: 18px; font-weight: 600; color: #1f2937; margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 						SEO Impact Tracker
 					</h2>
-				</div>
+						</div>
 				<p style="font-size: 16px; color: #374151; margin: 0; line-height: 1.6;">
 					You saved <strong style="color: #22c55e; font-weight: 600;"><?php echo esc_html( $time_saved_hours ); ?> hours</strong> 
 					and improved <strong style="color: #22c55e; font-weight: 600;"><?php echo esc_html( $seo_impact['posts_optimized'] ); ?> meta tags</strong> 
 					— that's <strong style="color: #22c55e; font-weight: 600;">+<?php echo esc_html( $seo_impact['estimated_rankings'] ); ?>%</strong> visibility.
 				</p>
-				<div style="position: absolute; top: 28px; right: 28px; cursor: help;" title="Visibility gain = improved CTR potential">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+				<div style="position: absolute; top: 28px; right: 28px; cursor: help;" 
+					 title="<?php esc_attr_e( 'Visibility gain represents the estimated improvement in click-through rate (CTR) potential. Better meta tags can increase how often your posts appear in search results and get clicked.', 'seo-ai-meta-generator' ); ?>"
+					 class="seo-ai-meta-tooltip-trigger">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" style="transition: stroke 0.2s;">
 						<circle cx="12" cy="12" r="10"/>
 						<line x1="12" y1="16" x2="12" y2="12"/>
 						<line x1="12" y1="8" x2="12.01" y2="8"/>
 					</svg>
 				</div>
-			</div>
-
+				</div>
+				
 			<!-- Two Column Layout -->
 			<div class="seo-ai-meta-dashboard-grid" style="display: grid; grid-template-columns: 1fr 320px; gap: 24px; margin-bottom: 32px;">
 				<!-- Left Column - Bulk Generate -->
@@ -312,7 +314,7 @@ if ( empty( $settings ) ) {
 						<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
 							<span style="font-size: 14px; font-weight: 500; color: #374151;">Bulk Generate</span>
 							<span style="font-size: 14px; color: #6b7280;">Sort more</span>
-						</div>
+					</div>
 						
 						<!-- Post List -->
 						<div style="margin-bottom: 20px;">
@@ -325,7 +327,7 @@ if ( empty( $settings ) ) {
 										</svg>
 										<span style="flex: 1; font-size: 14px; color: #374151;"><?php echo esc_html( get_the_title() ); ?></span>
 										<span style="font-size: 12px; color: #9ca3af; padding: 4px 8px; background: #f3f4f6; border-radius: 4px;">Pending</span>
-									</div>
+			</div>
 								<?php endwhile; ?>
 								<?php wp_reset_postdata(); ?>
 							<?php endif; ?>
@@ -335,32 +337,32 @@ if ( empty( $settings ) ) {
 									<div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f3f4f6;">
 										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" style="flex-shrink: 0;">
 											<path d="M20 6L9 17l-5-5"/>
-										</svg>
+					</svg>
 										<span style="flex: 1; font-size: 14px; color: #374151;"><?php echo esc_html( get_the_title() ); ?></span>
 										<span style="font-size: 12px; color: #22c55e; padding: 4px 8px; background: #d1fae5; border-radius: 4px; font-weight: 500;">Optimized</span>
-									</div>
+				</div>
 								<?php endwhile; ?>
 								<?php wp_reset_postdata(); ?>
 							<?php endif; ?>
-						</div>
-						
-						<?php if ( $posts_without_meta > 0 ) : ?>
+			</div>
+
+							<?php if ( $posts_without_meta > 0 ) : ?>
 							<a href="<?php echo esc_url( add_query_arg( 'tab', 'bulk', $base_tab_url ) ); ?>" 
 							   style="display: inline-block; width: 100%; padding: 12px 24px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; text-align: center; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);"
 							   onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px -1px rgba(59, 130, 246, 0.4)';"
 							   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgba(59, 130, 246, 0.3)';">
 								Generate All
-							</a>
-						<?php else : ?>
+								</a>
+							<?php else : ?>
 							<div style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #d1fae5; border-radius: 8px; color: #22c55e;">
 								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 									<path d="M20 6L9 17l-5-5"/>
-								</svg>
+									</svg>
 								<span style="font-size: 14px; font-weight: 500;">All posts optimized!</span>
-							</div>
-						<?php endif; ?>
+								</div>
+							<?php endif; ?>
+						</div>
 					</div>
-				</div>
 
 				<!-- Right Column - Upgrade to Pro Card -->
 				<div style="position: sticky; top: 20px; height: fit-content;">
@@ -369,11 +371,11 @@ if ( empty( $settings ) ) {
 							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
 								<line x1="12" y1="5" x2="12" y2="19"/>
 								<line x1="5" y1="12" x2="19" y2="12"/>
-							</svg>
+								</svg>
 							<h3 style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 								Upgrade to Pro
 							</h3>
-						</div>
+							</div>
 						<p style="font-size: 14px; color: #374151; margin: 0 0 20px 0; font-weight: 500;">
 							Unlock Unlimited AI Power
 						</p>
