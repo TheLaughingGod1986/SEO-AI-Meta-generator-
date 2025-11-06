@@ -804,11 +804,14 @@ if ( empty( $settings ) ) {
 				<!-- Export/Import Card -->
 				<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 28px; margin-top: 24px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
 					<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #f3f4f6;">
-						<div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);">
-							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+						<div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 								<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
 								<polyline points="7 10 12 15 17 10"/>
 								<line x1="12" y1="15" x2="12" y2="3"/>
+								<path d="M3 9v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9"/>
+								<polyline points="17 14 12 9 7 14"/>
+								<line x1="12" y1="9" x2="12" y2="21"/>
 							</svg>
 						</div>
 						<div>
