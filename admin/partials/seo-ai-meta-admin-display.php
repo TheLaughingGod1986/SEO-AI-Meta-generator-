@@ -803,12 +803,14 @@ if ( empty( $settings ) ) {
 
 				<!-- Export/Import Card -->
 				<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 28px; margin-top: 24px;">
-					<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
-						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2" style="flex-shrink: 0;">
-							<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-							<polyline points="7 10 12 15 17 10"/>
-							<line x1="12" y1="15" x2="12" y2="3"/>
-						</svg>
+					<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #f3f4f6;">
+						<div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+								<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+								<polyline points="7 10 12 15 17 10"/>
+								<line x1="12" y1="15" x2="12" y2="3"/>
+							</svg>
+						</div>
 						<div>
 							<h2 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #1f2937; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 								<?php esc_html_e( 'Export / Import Meta Tags', 'seo-ai-meta-generator' ); ?>
@@ -817,71 +819,101 @@ if ( empty( $settings ) ) {
 						</div>
 					</div>
 
-					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
 						<!-- Export Section -->
-						<div style="padding: 24px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 8px; border: 1px solid #bae6fd;">
-							<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2">
-									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-									<polyline points="7 10 12 15 17 10"/>
-									<line x1="12" y1="15" x2="12" y2="3"/>
-								</svg>
-								<h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #0c4a6e;">
-									<?php esc_html_e( 'Export Meta Tags', 'seo-ai-meta-generator' ); ?>
-								</h3>
+						<div style="padding: 24px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 10px; border: 1px solid #bfdbfe; position: relative; overflow: hidden;">
+							<div style="position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; background: rgba(59, 130, 246, 0.1); border-radius: 50%;"></div>
+							<div style="position: relative; z-index: 1;">
+								<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+									<div style="width: 36px; height: 36px; border-radius: 8px; background: #3b82f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+											<polyline points="7 10 12 15 17 10"/>
+											<line x1="12" y1="15" x2="12" y2="3"/>
+										</svg>
+									</div>
+									<h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #1e40af;">
+										<?php esc_html_e( 'Export Meta Tags', 'seo-ai-meta-generator' ); ?>
+									</h3>
+								</div>
+								<p style="margin: 0 0 24px 0; font-size: 13px; color: #1e40af; line-height: 1.6;">
+									<?php esc_html_e( 'Download all meta tags as a CSV file for backup or migration purposes', 'seo-ai-meta-generator' ); ?>
+								</p>
+								<a href="<?php echo esc_url( add_query_arg( array( 'action' => 'seo_ai_meta_export', 'nonce' => wp_create_nonce( 'seo_ai_meta_export' ) ), admin_url( 'admin-post.php' ) ) ); ?>" 
+								   class="seo-ai-meta-export-btn"
+								   style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);"
+								   onmouseover="this.style.background='#2563eb'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(59, 130, 246, 0.3)';"
+								   onmouseout="this.style.background='#3b82f6'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(59, 130, 246, 0.2)';">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+										<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+										<polyline points="7 10 12 15 17 10"/>
+										<line x1="12" y1="15" x2="12" y2="3"/>
+									</svg>
+									<span><?php esc_html_e( 'Export CSV', 'seo-ai-meta-generator' ); ?></span>
+								</a>
 							</div>
-							<p style="margin: 0 0 20px 0; font-size: 13px; color: #075985; line-height: 1.5;">
-								<?php esc_html_e( 'Download all meta tags as a CSV file for backup or migration', 'seo-ai-meta-generator' ); ?>
-							</p>
-							<a href="<?php echo esc_url( add_query_arg( array( 'action' => 'seo_ai_meta_export', 'nonce' => wp_create_nonce( 'seo_ai_meta_export' ) ), admin_url( 'admin-post.php' ) ) ); ?>" 
-							   style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 20px; background: #0284c7; color: white; border: none; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s;"
-							   onmouseover="this.style.background='#0369a1'; this.style.transform='translateY(-1px)';"
-							   onmouseout="this.style.background='#0284c7'; this.style.transform='translateY(0)';">
-								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-									<polyline points="7 10 12 15 17 10"/>
-									<line x1="12" y1="15" x2="12" y2="3"/>
-								</svg>
-								<span><?php esc_html_e( 'Export CSV', 'seo-ai-meta-generator' ); ?></span>
-							</a>
 						</div>
 
 						<!-- Import Section -->
-						<div style="padding: 24px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 8px; border: 1px solid #86efac;">
-							<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
-									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-									<polyline points="17 8 12 3 7 8"/>
-									<line x1="12" y1="3" x2="12" y2="15"/>
-								</svg>
-								<h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #166534;">
-									<?php esc_html_e( 'Import Meta Tags', 'seo-ai-meta-generator' ); ?>
-								</h3>
+						<div style="padding: 24px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; border: 1px solid #86efac; position: relative; overflow: hidden;">
+							<div style="position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; background: rgba(34, 197, 94, 0.1); border-radius: 50%;"></div>
+							<div style="position: relative; z-index: 1;">
+								<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+									<div style="width: 36px; height: 36px; border-radius: 8px; background: #22c55e; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+											<polyline points="17 8 12 3 7 8"/>
+											<line x1="12" y1="3" x2="12" y2="15"/>
+										</svg>
+									</div>
+									<h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #166534;">
+										<?php esc_html_e( 'Import Meta Tags', 'seo-ai-meta-generator' ); ?>
+									</h3>
+								</div>
+								<p style="margin: 0 0 24px 0; font-size: 13px; color: #166534; line-height: 1.6;">
+									<?php esc_html_e( 'Upload a CSV file to restore or import meta tags to your site', 'seo-ai-meta-generator' ); ?>
+								</p>
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 12px;">
+									<input type="hidden" name="action" value="seo_ai_meta_import">
+									<?php wp_nonce_field( 'seo_ai_meta_import', 'seo_ai_meta_import_nonce' ); ?>
+									<div style="position: relative;">
+										<label style="display: block; cursor: pointer;">
+											<input type="file" name="import_file" accept=".csv" required 
+												   id="seo-ai-meta-import-file"
+												   style="position: absolute; opacity: 0; width: 0; height: 0;"
+												   onchange="var fileName = this.files[0] ? this.files[0].name : 'No file chosen'; document.getElementById('seo-ai-meta-file-name').textContent = fileName; document.getElementById('seo-ai-meta-file-name').style.color = this.files[0] ? '#166534' : '#9ca3af';">
+											<div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: white; border: 2px dashed #86efac; border-radius: 8px; transition: all 0.2s;"
+												 onmouseover="this.style.borderColor='#22c55e'; this.style.background='#f0fdf4';"
+												 onmouseout="this.style.borderColor='#86efac'; this.style.background='white';">
+												<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" style="flex-shrink: 0;">
+													<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+													<polyline points="17 8 12 3 7 8"/>
+													<line x1="12" y1="3" x2="12" y2="15"/>
+												</svg>
+												<div style="flex: 1; min-width: 0;">
+													<div style="font-size: 13px; font-weight: 500; color: #166534; margin-bottom: 2px;">
+														<?php esc_html_e( 'Choose CSV file', 'seo-ai-meta-generator' ); ?>
+													</div>
+													<div id="seo-ai-meta-file-name" style="font-size: 12px; color: #9ca3af; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+														<?php esc_html_e( 'No file chosen', 'seo-ai-meta-generator' ); ?>
+													</div>
+												</div>
+											</div>
+										</label>
+									</div>
+									<button type="submit" 
+											style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 20px; background: #22c55e; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);"
+											onmouseover="this.style.background='#16a34a'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(34, 197, 94, 0.3)';"
+											onmouseout="this.style.background='#22c55e'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(34, 197, 94, 0.2)';">
+										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+											<polyline points="17 8 12 3 7 8"/>
+											<line x1="12" y1="3" x2="12" y2="15"/>
+										</svg>
+										<span><?php esc_html_e( 'Import CSV', 'seo-ai-meta-generator' ); ?></span>
+									</button>
+								</form>
 							</div>
-							<p style="margin: 0 0 20px 0; font-size: 13px; color: #15803d; line-height: 1.5;">
-								<?php esc_html_e( 'Upload a CSV file to restore or import meta tags', 'seo-ai-meta-generator' ); ?>
-							</p>
-							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 12px;">
-								<input type="hidden" name="action" value="seo_ai_meta_import">
-								<?php wp_nonce_field( 'seo_ai_meta_import', 'seo_ai_meta_import_nonce' ); ?>
-								<label style="display: block;">
-									<input type="file" name="import_file" accept=".csv" required 
-										   style="width: 100%; padding: 10px 12px; border: 1px solid #86efac; border-radius: 6px; font-size: 13px; background: white; color: #374151; cursor: pointer;"
-										   onchange="this.nextElementSibling.textContent = this.files[0] ? this.files[0].name : 'No file chosen'">
-									<span style="display: block; margin-top: 6px; font-size: 12px; color: #15803d; font-weight: 500;">No file chosen</span>
-								</label>
-								<button type="submit" 
-										style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 20px; background: #16a34a; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s;"
-										onmouseover="this.style.background='#15803d'; this.style.transform='translateY(-1px)';"
-										onmouseout="this.style.background='#16a34a'; this.style.transform='translateY(0)';">
-									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-										<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-										<polyline points="17 8 12 3 7 8"/>
-										<line x1="12" y1="3" x2="12" y2="15"/>
-									</svg>
-									<span><?php esc_html_e( 'Import CSV', 'seo-ai-meta-generator' ); ?></span>
-								</button>
-							</form>
 						</div>
 					</div>
 				</div>
