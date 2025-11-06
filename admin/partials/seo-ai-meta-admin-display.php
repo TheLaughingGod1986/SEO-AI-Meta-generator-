@@ -275,18 +275,7 @@ if ( empty( $settings ) ) {
 			</div>
 
 			<!-- Two Column Layout -->
-			<div style="display: grid; grid-template-columns: 1fr 320px; gap: 24px; margin-bottom: 32px;">
-				<style>
-					@media (max-width: 1024px) {
-						.seo-ai-meta-dashboard-content > div[style*="grid-template-columns: 1fr 320px"] {
-							grid-template-columns: 1fr !important;
-						}
-						.seo-ai-meta-dashboard-content > div[style*="grid-template-columns: 1fr 320px"] > div:last-child {
-							position: relative !important;
-							top: auto !important;
-						}
-					}
-				</style>
+			<div class="seo-ai-meta-dashboard-grid" style="display: grid; grid-template-columns: 1fr 320px; gap: 24px; margin-bottom: 32px;">
 				<!-- Left Column - Bulk Generate -->
 				<div>
 					<div style="padding: 28px; background: white; border-radius: 12px; border: 1px solid #e5e7eb;">
