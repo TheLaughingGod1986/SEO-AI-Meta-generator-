@@ -802,49 +802,49 @@ if ( empty( $settings ) ) {
 				</form>
 
 				<!-- Export/Import Card -->
-				<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 28px; margin-top: 24px;">
+				<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 28px; margin-top: 24px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
 					<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #f3f4f6;">
-						<div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+						<div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
 								<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
 								<polyline points="7 10 12 15 17 10"/>
 								<line x1="12" y1="15" x2="12" y2="3"/>
 							</svg>
 						</div>
 						<div>
-							<h2 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #1f2937; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+							<h2 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #1f2937; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: -0.01em;">
 								<?php esc_html_e( 'Export / Import Meta Tags', 'seo-ai-meta-generator' ); ?>
 							</h2>
-							<p style="margin: 0; font-size: 14px; color: #6b7280;"><?php esc_html_e( 'Backup or restore your meta tags', 'seo-ai-meta-generator' ); ?></p>
+							<p style="margin: 0; font-size: 14px; color: #6b7280; line-height: 1.5;"><?php esc_html_e( 'Backup or restore your meta tags', 'seo-ai-meta-generator' ); ?></p>
 						</div>
 					</div>
 
 					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
 						<!-- Export Section -->
-						<div style="padding: 24px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 10px; border: 1px solid #bfdbfe; position: relative; overflow: hidden;">
-							<div style="position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; background: rgba(59, 130, 246, 0.1); border-radius: 50%;"></div>
+						<div style="padding: 24px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 10px; border: 1px solid #bfdbfe; position: relative; overflow: hidden; box-shadow: 0 1px 2px rgba(59, 130, 246, 0.1);">
+							<div style="position: absolute; top: -30px; right: -30px; width: 100px; height: 100px; background: rgba(59, 130, 246, 0.08); border-radius: 50%;"></div>
 							<div style="position: relative; z-index: 1;">
-								<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
-									<div style="width: 36px; height: 36px; border-radius: 8px; background: #3b82f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+								<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+									<div style="width: 40px; height: 40px; border-radius: 10px; background: #3b82f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);">
+										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
 											<polyline points="7 10 12 15 17 10"/>
 											<line x1="12" y1="15" x2="12" y2="3"/>
 										</svg>
 									</div>
-									<h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #1e40af;">
+									<h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #1e40af; letter-spacing: -0.01em;">
 										<?php esc_html_e( 'Export Meta Tags', 'seo-ai-meta-generator' ); ?>
 									</h3>
 								</div>
-								<p style="margin: 0 0 24px 0; font-size: 13px; color: #1e40af; line-height: 1.6;">
+								<p style="margin: 0 0 24px 0; font-size: 13px; color: #1e40af; line-height: 1.6; opacity: 0.9;">
 									<?php esc_html_e( 'Download all meta tags as a CSV file for backup or migration purposes', 'seo-ai-meta-generator' ); ?>
 								</p>
 								<a href="<?php echo esc_url( add_query_arg( array( 'action' => 'seo_ai_meta_export', 'nonce' => wp_create_nonce( 'seo_ai_meta_export' ) ), admin_url( 'admin-post.php' ) ) ); ?>" 
 								   class="seo-ai-meta-export-btn"
-								   style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);"
-								   onmouseover="this.style.background='#2563eb'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(59, 130, 246, 0.3)';"
-								   onmouseout="this.style.background='#3b82f6'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(59, 130, 246, 0.2)';">
-									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								   style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25); letter-spacing: -0.01em;"
+								   onmouseover="this.style.background='linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(59, 130, 246, 0.35)';"
+								   onmouseout="this.style.background='linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(59, 130, 246, 0.25)';">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 										<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
 										<polyline points="7 10 12 15 17 10"/>
 										<line x1="12" y1="15" x2="12" y2="3"/>
@@ -855,22 +855,22 @@ if ( empty( $settings ) ) {
 						</div>
 
 						<!-- Import Section -->
-						<div style="padding: 24px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; border: 1px solid #86efac; position: relative; overflow: hidden;">
-							<div style="position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; background: rgba(34, 197, 94, 0.1); border-radius: 50%;"></div>
+						<div style="padding: 24px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; border: 1px solid #86efac; position: relative; overflow: hidden; box-shadow: 0 1px 2px rgba(34, 197, 94, 0.1);">
+							<div style="position: absolute; top: -30px; right: -30px; width: 100px; height: 100px; background: rgba(34, 197, 94, 0.08); border-radius: 50%;"></div>
 							<div style="position: relative; z-index: 1;">
-								<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
-									<div style="width: 36px; height: 36px; border-radius: 8px; background: #22c55e; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+								<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+									<div style="width: 40px; height: 40px; border-radius: 10px; background: #22c55e; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3);">
+										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
 											<polyline points="17 8 12 3 7 8"/>
 											<line x1="12" y1="3" x2="12" y2="15"/>
 										</svg>
 									</div>
-									<h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #166534;">
+									<h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #166534; letter-spacing: -0.01em;">
 										<?php esc_html_e( 'Import Meta Tags', 'seo-ai-meta-generator' ); ?>
 									</h3>
 								</div>
-								<p style="margin: 0 0 24px 0; font-size: 13px; color: #166534; line-height: 1.6;">
+								<p style="margin: 0 0 24px 0; font-size: 13px; color: #166534; line-height: 1.6; opacity: 0.9;">
 									<?php esc_html_e( 'Upload a CSV file to restore or import meta tags to your site', 'seo-ai-meta-generator' ); ?>
 								</p>
 								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 12px;">
@@ -881,20 +881,20 @@ if ( empty( $settings ) ) {
 											<input type="file" name="import_file" accept=".csv" required 
 												   id="seo-ai-meta-import-file"
 												   style="position: absolute; opacity: 0; width: 0; height: 0;"
-												   onchange="var fileName = this.files[0] ? this.files[0].name : 'No file chosen'; document.getElementById('seo-ai-meta-file-name').textContent = fileName; document.getElementById('seo-ai-meta-file-name').style.color = this.files[0] ? '#166534' : '#9ca3af';">
-											<div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: white; border: 2px dashed #86efac; border-radius: 8px; transition: all 0.2s;"
-												 onmouseover="this.style.borderColor='#22c55e'; this.style.background='#f0fdf4';"
-												 onmouseout="this.style.borderColor='#86efac'; this.style.background='white';">
-												<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" style="flex-shrink: 0;">
+												   onchange="var fileName = this.files[0] ? this.files[0].name : 'No file chosen'; document.getElementById('seo-ai-meta-file-name').textContent = fileName; document.getElementById('seo-ai-meta-file-name').style.color = this.files[0] ? '#166534' : '#9ca3af'; document.getElementById('seo-ai-meta-file-name').style.fontWeight = this.files[0] ? '500' : '400';">
+											<div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: white; border: 2px dashed #86efac; border-radius: 8px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 1px 2px rgba(34, 197, 94, 0.05);"
+												 onmouseover="this.style.borderColor='#22c55e'; this.style.background='#f0fdf4'; this.style.boxShadow='0 2px 4px rgba(34, 197, 94, 0.1)';"
+												 onmouseout="this.style.borderColor='#86efac'; this.style.background='white'; this.style.boxShadow='0 1px 2px rgba(34, 197, 94, 0.05)';">
+												<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
 													<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
 													<polyline points="17 8 12 3 7 8"/>
 													<line x1="12" y1="3" x2="12" y2="15"/>
 												</svg>
 												<div style="flex: 1; min-width: 0;">
-													<div style="font-size: 13px; font-weight: 500; color: #166534; margin-bottom: 2px;">
+													<div style="font-size: 13px; font-weight: 600; color: #166534; margin-bottom: 3px; letter-spacing: -0.01em;">
 														<?php esc_html_e( 'Choose CSV file', 'seo-ai-meta-generator' ); ?>
 													</div>
-													<div id="seo-ai-meta-file-name" style="font-size: 12px; color: #9ca3af; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+													<div id="seo-ai-meta-file-name" style="font-size: 12px; color: #9ca3af; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: all 0.2s;">
 														<?php esc_html_e( 'No file chosen', 'seo-ai-meta-generator' ); ?>
 													</div>
 												</div>
@@ -902,10 +902,10 @@ if ( empty( $settings ) ) {
 										</label>
 									</div>
 									<button type="submit" 
-											style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 20px; background: #22c55e; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);"
-											onmouseover="this.style.background='#16a34a'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(34, 197, 94, 0.3)';"
-											onmouseout="this.style.background='#22c55e'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(34, 197, 94, 0.2)';">
-										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+											style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px 20px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 4px rgba(34, 197, 94, 0.25); letter-spacing: -0.01em;"
+											onmouseover="this.style.background='linear-gradient(135deg, #16a34a 0%, #15803d 100%)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(34, 197, 94, 0.35)';"
+											onmouseout="this.style.background='linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(34, 197, 94, 0.25)';">
+										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
 											<polyline points="17 8 12 3 7 8"/>
 											<line x1="12" y1="3" x2="12" y2="15"/>
