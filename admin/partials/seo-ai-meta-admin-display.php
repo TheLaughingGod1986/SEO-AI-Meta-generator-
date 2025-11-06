@@ -227,7 +227,7 @@ if ( empty( $settings ) ) {
 	<div class="seo-ai-meta-dashboard-content" style="max-width: 960px; margin: 0 auto; padding: 28px 0;">
 		<?php if ( $tab === 'dashboard' ) : ?>
 			<!-- Main Title -->
-			<h1 style="font-size: 28px; font-weight: 700; color: #1f2937; margin: 0 0 32px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.2;">
+			<h1 class="text-3xl font-bold text-gray-900 mb-8" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.2;">
 				Generate SEO Titles and Meta Descriptions with AI
 			</h1>
 
@@ -511,146 +511,184 @@ if ( empty( $settings ) ) {
 
 		<?php elseif ( $tab === 'bulk' ) : ?>
 			<!-- Bulk Generate Tab -->
-			<div>
-				<h1 style="font-size: 28px; font-weight: 700; color: #1f2937; margin: 0 0 8px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.2;">
-					Bulk Generate Meta
-				</h1>
-				<p style="font-size: 14px; color: #6b7280; margin: 0 0 32px 0; line-height: 1.5;">
-					<?php esc_html_e( 'Generate SEO meta tags for posts that don\'t have them yet.', 'seo-ai-meta-generator' ); ?>
-				</p>
-				
-				<!-- Stats Card -->
-				<div style="padding: 28px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
-					<div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-						<div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); display: flex; align-items: center; justify-content: center;">
-							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-								<polyline points="16 18 22 12 16 6"/>
-								<polyline points="8 6 2 12 8 18"/>
-							</svg>
+			<?php
+			// Calculate progress stats
+			$optimized_count = $posts_with_meta;
+			$total_count = $total_posts;
+			$pending_count = $posts_without_meta;
+			$progress_percentage = $total_count > 0 ? round( ( $optimized_count / $total_count ) * 100 ) : 0;
+			?>
+			
+			<!-- Two Column Layout -->
+			<div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mb-8">
+				<!-- Main Content -->
+				<div>
+					<div class="bg-white rounded-xl border border-gray-200 p-8">
+						<!-- Progress Chart and Description -->
+						<div class="flex items-start gap-8 mb-8">
+							<!-- Circular Progress Chart -->
+							<div class="relative w-32 h-32 flex-shrink-0">
+								<svg width="128" height="128" class="transform -rotate-90" viewBox="0 0 128 128">
+									<defs>
+										<linearGradient id="bulk-progress-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+											<stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+											<stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
+										</linearGradient>
+									</defs>
+									<!-- Background circle -->
+									<circle cx="64" cy="64" r="56" fill="none" stroke="#e5e7eb" stroke-width="12"/>
+									<!-- Progress circle -->
+									<circle 
+										id="bulk-progress-ring" 
+										cx="64" 
+										cy="64" 
+										r="56" 
+										fill="none" 
+										stroke="url(#bulk-progress-gradient)" 
+										stroke-width="12" 
+										stroke-linecap="round"
+										data-percentage="<?php echo esc_attr( $progress_percentage ); ?>"
+										style="stroke-dasharray: <?php echo esc_attr( 2 * M_PI * 56 ); ?>; stroke-dashoffset: <?php echo esc_attr( 2 * M_PI * 56 * ( 1 - $progress_percentage / 100 ) ); ?>; transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);"
+									/>
+								</svg>
+								<!-- Count text inside ring -->
+								<div class="absolute inset-0 flex items-center justify-center">
+									<div class="text-center">
+										<div class="text-3xl font-bold text-gray-900 leading-none">
+											<?php echo esc_html( $optimized_count ); ?>/<?php echo esc_html( $total_count ); ?>
+										</div>
+										<div class="text-xs text-gray-500 mt-1">posts</div>
+									</div>
+								</div>
+							</div>
+							
+							<!-- Description -->
+							<div class="flex-1 pt-2">
+								<p class="text-sm text-gray-600 mb-3 leading-relaxed">
+									You're improving your site's SEO visibility with each generation.
+								</p>
+								<h2 class="text-2xl font-bold text-gray-900 mb-2">
+									Bulk Generate Meta
+								</h2>
+								<p class="text-sm text-gray-600 leading-relaxed">
+									Automatically generate titles and descriptions for posts missing meta tags.
+								</p>
+							</div>
 						</div>
-						<div style="flex: 1;">
-							<h2 style="font-size: 18px; font-weight: 600; color: #1f2937; margin: 0 0 4px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-								<?php esc_html_e( 'Posts Ready for Generation', 'seo-ai-meta-generator' ); ?>
-							</h2>
-							<p style="font-size: 14px; color: #6b7280; margin: 0;">
-								<strong><?php esc_html_e( 'Found:', 'seo-ai-meta-generator' ); ?></strong>
-								<?php echo esc_html( $total_bulk_posts ); ?> <?php esc_html_e( 'posts without meta tags', 'seo-ai-meta-generator' ); ?>
-							</p>
-						</div>
+
+						<?php if ( $pending_count > 0 ) : ?>
+							<!-- Generate All Button -->
+							<button type="button" 
+									id="seo-ai-meta-bulk-generate-all-btn"
+									class="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold text-lg rounded-lg shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200 mb-8">
+								Generate All
+							</button>
+
+							<!-- Live Generation Log -->
+							<div id="seo-ai-meta-bulk-log-container" class="hidden">
+								<div class="border-t border-gray-200 pt-6">
+									<h3 class="text-sm font-semibold text-gray-700 mb-4">Generation Log</h3>
+									<div id="seo-ai-meta-bulk-log" class="space-y-2 max-h-64 overflow-y-auto">
+										<!-- Log entries will be added here dynamically -->
+									</div>
+									<div class="mt-4 flex justify-end">
+										<button type="button" 
+												id="seo-ai-meta-bulk-preview-btn"
+												class="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors text-sm hidden">
+											Preview Changes
+										</button>
+									</div>
+								</div>
+							</div>
+
+							<!-- Success State (hidden by default) -->
+							<div id="seo-ai-meta-bulk-success" class="hidden border-t border-gray-200 pt-6">
+								<div class="flex items-center gap-3 mb-4 seo-ai-meta-success-animation">
+									<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" class="flex-shrink-0">
+										<path d="M20 6L9 17l-5-5"/>
+									</svg>
+									<h3 class="text-lg font-bold text-gray-900 m-0">
+										All posts optimized!
+									</h3>
+								</div>
+								<div id="seo-ai-meta-bulk-success-log" class="space-y-2">
+									<!-- Success log entries -->
+								</div>
+							</div>
+						<?php else : ?>
+							<!-- All Optimized State -->
+							<div class="border-t border-gray-200 pt-6">
+								<div class="flex items-center gap-3 mb-4">
+									<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" class="flex-shrink-0">
+										<path d="M20 6L9 17l-5-5"/>
+									</svg>
+									<h3 class="text-lg font-bold text-gray-900 m-0">
+										All posts optimized!
+									</h3>
+								</div>
+								<p class="text-sm text-gray-600">
+									Great job! All your posts are optimized with SEO meta tags.
+								</p>
+							</div>
+						<?php endif; ?>
 					</div>
 				</div>
 
-				<?php if ( $bulk_query->have_posts() ) : ?>
-					<div style="padding: 28px; background: white; border-radius: 12px; border: 1px solid #e5e7eb;">
-						<form id="seo-ai-meta-bulk-form">
-							<!-- Select All Header -->
-							<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
-								<label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 14px; font-weight: 500; color: #374151;">
-									<input type="checkbox" id="seo-ai-meta-select-all" style="width: 18px; height: 18px; cursor: pointer;">
-									<span><?php esc_html_e( 'Select All', 'seo-ai-meta-generator' ); ?></span>
-								</label>
-								<span style="font-size: 14px; color: #6b7280;">
-									<?php echo esc_html( $bulk_query->found_posts ); ?> <?php esc_html_e( 'posts', 'seo-ai-meta-generator' ); ?>
-								</span>
+				<!-- Right Column - Upgrade to Pro Card -->
+				<div class="lg:sticky lg:top-5 h-fit">
+					<div class="bg-gradient-to-br from-[#00C896] to-[#007F5F] rounded-xl p-7 shadow-lg relative overflow-hidden seo-ai-meta-upgrade-card">
+						<!-- Shimmer animation overlay -->
+						<div class="absolute inset-0 opacity-0 seo-ai-meta-shimmer"></div>
+						
+						<div class="relative z-10">
+							<div class="flex items-center gap-2 mb-3">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+									<line x1="12" y1="5" x2="12" y2="19"/>
+									<line x1="5" y1="12" x2="19" y2="12"/>
+								</svg>
+								<h3 class="text-lg font-bold text-white m-0">
+									Upgrade to Pro
+								</h3>
 							</div>
-
-							<!-- Posts List -->
-							<div style="margin-bottom: 24px;">
-								<?php while ( $bulk_query->have_posts() ) : $bulk_query->the_post(); ?>
-									<div style="display: flex; align-items: center; gap: 16px; padding: 16px; border-bottom: 1px solid #f3f4f6; transition: background 0.2s;" 
-										 onmouseover="this.style.background='#f9fafb';" 
-										 onmouseout="this.style.background='transparent';">
-										<input type="checkbox" name="post_ids[]" value="<?php echo esc_attr( get_the_ID() ); ?>" 
-											   class="seo-ai-meta-post-checkbox" 
-											   style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0;">
-										<div style="flex: 1; min-width: 0;">
-											<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
-												<strong style="font-size: 14px; font-weight: 600; color: #1f2937; flex: 1;">
-													<?php echo esc_html( get_the_title() ); ?>
-												</strong>
-												<span style="font-size: 12px; color: #9ca3af; padding: 4px 8px; background: #fee2e2; border-radius: 4px; color: #dc2626; font-weight: 500;">
-													<?php esc_html_e( 'No Meta', 'seo-ai-meta-generator' ); ?>
-												</span>
-											</div>
-											<div style="display: flex; align-items: center; gap: 16px; font-size: 12px; color: #6b7280;">
-												<span>ID: <?php echo esc_html( get_the_ID() ); ?></span>
-												<span>•</span>
-												<span><?php echo esc_html( get_the_date() ); ?></span>
-												<span>•</span>
-												<a href="<?php echo esc_url( get_edit_post_link() ); ?>" target="_blank" 
-												   style="color: #3b82f6; text-decoration: none; font-weight: 500;"
-												   onmouseover="this.style.textDecoration='underline';"
-												   onmouseout="this.style.textDecoration='none';">
-													<?php esc_html_e( 'Edit', 'seo-ai-meta-generator' ); ?>
-												</a>
-											</div>
-										</div>
-									</div>
-								<?php endwhile; ?>
-								<?php wp_reset_postdata(); ?>
-							</div>
-
-							<!-- Actions -->
-							<div style="display: flex; align-items: center; gap: 16px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-								<button type="button" id="seo-ai-meta-bulk-generate-btn" 
-										style="padding: 12px 24px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);"
-										onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px -1px rgba(59, 130, 246, 0.4)';"
-										onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgba(59, 130, 246, 0.3)';">
-									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-										<polyline points="16 18 22 12 16 6"/>
-										<polyline points="8 6 2 12 8 18"/>
-									</svg>
-									<span><?php esc_html_e( 'Generate Meta for Selected Posts', 'seo-ai-meta-generator' ); ?></span>
-								</button>
-								<span class="spinner" id="seo-ai-meta-bulk-spinner" style="float: none; margin-left: 10px;"></span>
-							</div>
-
-							<!-- Progress Bar -->
-							<div id="seo-ai-meta-bulk-progress" style="display: none; margin-top: 24px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
-								<div style="background: #f3f4f6; height: 32px; border-radius: 8px; overflow: hidden; position: relative; margin-bottom: 12px;">
-									<div class="seo-ai-meta-progress-fill" 
-										 style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); height: 100%; width: 0%; transition: width 0.3s; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;">
-										<span class="seo-ai-meta-progress-text">0%</span>
-									</div>
-								</div>
-								<p class="seo-ai-meta-progress-status" style="font-size: 14px; color: #6b7280; margin: 0;"></p>
-							</div>
-
-							<!-- Results -->
-							<div id="seo-ai-meta-bulk-results" style="margin-top: 24px;"></div>
-						</form>
-
-						<?php
-						// Pagination
-						$page_links = paginate_links(
-							array(
-								'base'      => add_query_arg( array( 'tab' => 'bulk', 'paged' => '%#%' ), $base_tab_url ),
-								'format'    => '',
-								'prev_text' => __( '&laquo; Previous', 'seo-ai-meta-generator' ),
-								'next_text' => __( 'Next &raquo;', 'seo-ai-meta-generator' ),
-								'total'     => $bulk_query->max_num_pages,
-								'current'   => $paged,
-							)
-						);
-						if ( $page_links ) {
-							echo '<div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; text-align: center;">' . wp_kses_post( $page_links ) . '</div>';
-						}
-						?>
+							<p class="text-sm text-white mb-4 opacity-90">
+								Unlock unlimited generations + advanced tuning
+							</p>
+							<button type="button" 
+									onclick="seoAiMetaShowModal();"
+									class="w-full px-6 py-3 bg-white text-[#007F5F] font-bold rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 text-sm">
+								Go Pro
+							</button>
+						</div>
 					</div>
-				<?php else : ?>
-					<div style="padding: 48px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; text-align: center;">
-						<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" style="margin: 0 auto 16px;">
-							<path d="M20 6L9 17l-5-5"/>
-						</svg>
-						<h3 style="font-size: 18px; font-weight: 600; color: #1f2937; margin: 0 0 8px 0;">
-							<?php esc_html_e( 'All posts have meta tags!', 'seo-ai-meta-generator' ); ?>
-						</h3>
-						<p style="font-size: 14px; color: #6b7280; margin: 0;">
-							<?php esc_html_e( 'Great job! All your posts are optimized with SEO meta tags.', 'seo-ai-meta-generator' ); ?>
-						</p>
-					</div>
-				<?php endif; ?>
+				</div>
 			</div>
+
+			<!-- Bottom Banner - AltText AI -->
+			<?php if ( ! SEO_AI_Meta_Helpers::is_alttext_ai_active() ) : ?>
+			<div class="bg-gray-50 rounded-xl border border-gray-200 p-6 mb-8 shadow-sm animate-fade-in">
+				<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+					<div class="flex items-start gap-4 flex-1">
+						<div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+								<rect x="3" y="3" width="18" height="18" rx="2"/>
+								<circle cx="8.5" cy="8.5" r="1.5"/>
+								<polyline points="21 15 16 10 5 21"/>
+							</svg>
+						</div>
+						<div class="flex-1">
+							<p class="text-sm text-gray-900 font-medium mb-1">
+								Complete your SEO Stack → Try AltText AI for image alt text automation.
+							</p>
+						</div>
+					</div>
+					<button type="button" 
+							onclick="window.open('<?php echo esc_url( SEO_AI_Meta_Helpers::get_alttext_ai_url() ); ?>', '_blank');"
+							class="px-5 py-2.5 bg-white text-gray-700 font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all duration-200 text-sm whitespace-nowrap">
+						Install Now
+					</button>
+				</div>
+			</div>
+			<?php endif; ?>
 
 		<?php elseif ( $tab === 'settings' ) : ?>
 			<?php

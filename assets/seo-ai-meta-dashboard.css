@@ -1476,3 +1476,45 @@
 		align-items: center;
 	}
 }
+
+/* ===================================================================
+   SUCCESS ANIMATION
+   =================================================================== */
+@keyframes success-bounce {
+	0%, 100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-10px);
+	}
+}
+
+.seo-ai-meta-success-animation {
+	animation: success-bounce 0.6s ease-in-out;
+}
+
+/* ===================================================================
+   BULK GENERATE LOG STYLING
+   =================================================================== */
+#seo-ai-meta-bulk-log {
+	scrollbar-width: thin;
+	scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+#seo-ai-meta-bulk-log::-webkit-scrollbar {
+	width: 6px;
+}
+
+#seo-ai-meta-bulk-log::-webkit-scrollbar-track {
+	background: #f1f5f9;
+	border-radius: 3px;
+}
+
+#seo-ai-meta-bulk-log::-webkit-scrollbar-thumb {
+	background: #cbd5e1;
+	border-radius: 3px;
+}
+
+#seo-ai-meta-bulk-log::-webkit-scrollbar-thumb:hover {
+	background: #94a3b8;
+}
