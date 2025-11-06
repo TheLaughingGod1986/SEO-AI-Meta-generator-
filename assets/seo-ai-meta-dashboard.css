@@ -1297,6 +1297,35 @@
 	}
 }
 
+/* ===================================================================
+   RESPONSIVE DESIGN
+   =================================================================== */
+@media (max-width: 1024px) {
+	.seo-ai-meta-dashboard-grid {
+		grid-template-columns: 1fr !important;
+	}
+	.seo-ai-meta-dashboard-grid > div:last-child {
+		position: relative !important;
+		top: auto !important;
+	}
+}
+
+@media (max-width: 768px) {
+	.seo-ai-meta-dashboard-content {
+		padding: 16px 0 !important;
+	}
+	
+	.seo-ai-meta-dashboard-content h1 {
+		font-size: 24px !important;
+	}
+	
+	/* Stack usage section on mobile */
+	.seo-ai-meta-dashboard-content > div[style*="display: flex"] {
+		flex-direction: column !important;
+		text-align: center !important;
+	}
+}
+
 /* Print styles */
 @media print {
 	.seo-ai-meta-dashboard-header,
