@@ -53,6 +53,15 @@ class SEO_AI_Meta_Admin {
 		if ( in_array( $hook, $plugin_pages, true ) || 
 		     strpos( $hook, $this->plugin_name ) !== false ||
 		     ( isset( $_GET['page'] ) && strpos( $_GET['page'], $this->plugin_name ) !== false ) ) {
+			// Add Tailwind CSS via Play CDN (compiled version)
+			wp_enqueue_script(
+				'tailwindcss',
+				'https://cdn.tailwindcss.com',
+				array(),
+				'3.4.0',
+				false
+			);
+			
 			// Add Google Fonts (Inter)
 			wp_enqueue_style(
 				'google-fonts-inter',

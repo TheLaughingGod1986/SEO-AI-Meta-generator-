@@ -47,7 +47,8 @@
 		setTimeout(function() {
 			var $ring = $('#seo-ai-meta-progress-ring');
 			if ($ring.length) {
-				var circumference = 2 * Math.PI * 54; // radius = 54
+				var radius = 56; // Updated radius
+				var circumference = 2 * Math.PI * radius;
 				var percentage = parseFloat($ring.attr('data-percentage') || $ring.closest('[data-percentage]').data('percentage') || 0);
 				var offset = circumference * (1 - (percentage / 100));
 				

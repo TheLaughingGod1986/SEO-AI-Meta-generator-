@@ -1378,3 +1378,101 @@
 		display: none !important;
 	}
 }
+
+/* ===================================================================
+   SHIMMER ANIMATION FOR UPGRADE CARD
+   =================================================================== */
+@keyframes shimmer {
+	0% {
+		transform: translateX(-100%);
+		opacity: 0;
+	}
+	50% {
+		opacity: 1;
+	}
+	100% {
+		transform: translateX(100%);
+		opacity: 0;
+	}
+}
+
+.seo-ai-meta-shimmer {
+	background: linear-gradient(
+		90deg,
+		transparent,
+		rgba(255, 255, 255, 0.3),
+		transparent
+	);
+	animation: shimmer 3s ease-in-out infinite;
+}
+
+.seo-ai-meta-upgrade-card:hover .seo-ai-meta-shimmer {
+	opacity: 1;
+}
+
+/* Pulse animation every 6 seconds */
+@keyframes pulse-shimmer {
+	0%, 90%, 100% {
+		opacity: 0;
+	}
+	5%, 85% {
+		opacity: 1;
+	}
+}
+
+.seo-ai-meta-shimmer {
+	animation: shimmer 3s ease-in-out infinite, pulse-shimmer 6s ease-in-out infinite;
+}
+
+/* ===================================================================
+   FADE IN ANIMATION
+   =================================================================== */
+@keyframes fade-in {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.animate-fade-in {
+	animation: fade-in 0.5s ease-out;
+}
+
+/* ===================================================================
+   TAILWIND UTILITY OVERRIDES (for compatibility)
+   =================================================================== */
+.seo-ai-meta-dashboard-content .grid {
+	display: grid;
+}
+
+.seo-ai-meta-dashboard-content .grid-cols-1 {
+	grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 1024px) {
+	.seo-ai-meta-dashboard-content .lg\:grid-cols-\[1fr_320px\] {
+		grid-template-columns: 1fr 320px;
+	}
+	
+	.seo-ai-meta-dashboard-content .lg\:sticky {
+		position: sticky;
+	}
+	
+	.seo-ai-meta-dashboard-content .lg\:top-5 {
+		top: 1.25rem;
+	}
+}
+
+@media (min-width: 768px) {
+	.seo-ai-meta-dashboard-content .md\:flex-row {
+		flex-direction: row;
+	}
+	
+	.seo-ai-meta-dashboard-content .md\:items-center {
+		align-items: center;
+	}
+}
