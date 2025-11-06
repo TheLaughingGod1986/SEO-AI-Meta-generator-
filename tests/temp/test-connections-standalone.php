@@ -9,7 +9,9 @@
 echo "🧪 Testing SEO AI Meta Backend & Stripe Connections\n";
 echo "==================================================\n\n";
 
-$plugin_dir = dirname(__DIR__, 2);
+require_once __DIR__ . '/bootstrap.php';
+
+$plugin_dir = SEO_AI_META_PLUGIN_ROOT;
 
 $api_url = 'https://alttext-ai-backend.onrender.com';
 $pro_price_id = 'price_1SQ6a5Jl9Rm418cMx77q8KB9';

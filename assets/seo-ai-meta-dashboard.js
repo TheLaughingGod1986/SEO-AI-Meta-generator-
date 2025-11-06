@@ -43,6 +43,30 @@
 			});
 		}, 150);
 
+		// Animate circular progress ring on page load
+		setTimeout(function() {
+			var $ring = $('#seo-ai-meta-progress-ring');
+			if ($ring.length) {
+				var circumference = 2 * Math.PI * 54; // radius = 54
+				var percentage = parseFloat($ring.attr('data-percentage') || $ring.closest('[data-percentage]').data('percentage') || 0);
+				var offset = circumference * (1 - (percentage / 100));
+				
+				// Set initial state (0%)
+				$ring.css({
+					'stroke-dasharray': circumference,
+					'stroke-dashoffset': circumference
+				});
+				
+				// Animate to actual percentage
+				setTimeout(function() {
+					$ring.css({
+						'stroke-dashoffset': offset,
+						'transition': 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+					});
+				}, 100);
+			}
+		}, 200);
+
 		// Bulk generate functionality (for tab)
 		// Select all checkbox
 		$('#seo-ai-meta-select-all').on('change', function() {

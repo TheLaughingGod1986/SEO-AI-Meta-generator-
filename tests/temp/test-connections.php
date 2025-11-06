@@ -6,7 +6,9 @@
  * Usage: wp eval-file test-connections.php
  */
 
-$plugin_dir = dirname(__DIR__, 2);
+require_once __DIR__ . '/bootstrap.php';
+
+$plugin_dir = SEO_AI_META_PLUGIN_ROOT;
 require_once $plugin_dir . '/includes/class-api-client-v2.php';
 require_once $plugin_dir . '/includes/class-seo-ai-meta-core.php';
 
@@ -205,5 +207,4 @@ if ($backend_ok && $auth_ok && $price_ids_ok && $stripe_ok) {
 }
 
 echo "\n";
-
 

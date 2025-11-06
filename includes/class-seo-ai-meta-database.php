@@ -338,31 +338,6 @@ class SEO_AI_Meta_Database {
 	}
 
 	/**
-	 * Get usage count for user
-	 *
-	 * @param int    $user_id User ID.
-	 * @param string $start_date Start date (optional).
-	 * @param string $end_date End date (optional).
-	 * @return int
-	 */
-	public static function get_usage_count( $user_id, $start_date = null, $end_date = null ) {
-		global $wpdb;
-		$table = self::get_table_name( 'usage_log' );
-
-		$where = $wpdb->prepare( 'user_id = %d', $user_id );
-
-		if ( $start_date ) {
-			$where .= $wpdb->prepare( ' AND created_at >= %s', $start_date );
-		}
-
-		if ( $end_date ) {
-			$where .= $wpdb->prepare( ' AND created_at <= %s', $end_date );
-		}
-
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE {$where}" );
-	}
-
-	/**
 	 * Migrate data from WordPress options/post meta to custom tables
 	 */
 	public static function migrate_data() {

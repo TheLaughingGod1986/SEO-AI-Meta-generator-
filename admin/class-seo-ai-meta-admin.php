@@ -53,19 +53,19 @@ class SEO_AI_Meta_Admin {
 		if ( in_array( $hook, $plugin_pages, true ) || 
 		     strpos( $hook, $this->plugin_name ) !== false ||
 		     ( isset( $_GET['page'] ) && strpos( $_GET['page'], $this->plugin_name ) !== false ) ) {
-			// Add Tailwind CSS via CDN for modern utility classes
+			// Add Google Fonts (Inter)
 			wp_enqueue_style(
-				'tailwind-css',
-				'https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css',
+				'google-fonts-inter',
+				'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
 				array(),
-				'3.4.0',
+				null,
 				'all'
 			);
 			
 			wp_enqueue_style(
 				$this->plugin_name,
 				SEO_AI_META_PLUGIN_URL . 'assets/seo-ai-meta-dashboard.css',
-				array( 'tailwind-css' ),
+				array( 'google-fonts-inter' ),
 				$this->version,
 				'all'
 			);

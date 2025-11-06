@@ -19,7 +19,9 @@ if (function_exists('apcu_clear_cache')) {
 require_once dirname(dirname(dirname(dirname(__FILE__)))) . '/wp-load.php';
 
 // Load the class
-$plugin_dir = dirname(__DIR__, 2);
+require_once __DIR__ . '/bootstrap.php';
+
+$plugin_dir = SEO_AI_META_PLUGIN_ROOT;
 require_once $plugin_dir . '/includes/class-seo-ai-meta-core.php';
 
 // Test the price IDs

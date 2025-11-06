@@ -6,7 +6,9 @@
  * Usage: wp eval-file test-backend-connection.php
  */
 
-$plugin_dir = dirname(__DIR__, 2);
+require_once __DIR__ . '/bootstrap.php';
+
+$plugin_dir = SEO_AI_META_PLUGIN_ROOT;
 require_once $plugin_dir . '/includes/class-api-client-v2.php';
 
 echo "🧪 Testing SEO AI Meta Backend Connection\n";

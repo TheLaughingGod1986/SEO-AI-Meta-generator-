@@ -12,7 +12,9 @@ $wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_t
 echo "✅ Cleared all SEO AI Meta transients\n";
 
 // Test backend connection
-$plugin_dir = dirname(__DIR__, 2);
+require_once __DIR__ . '/bootstrap.php';
+
+$plugin_dir = SEO_AI_META_PLUGIN_ROOT;
 require_once $plugin_dir . '/includes/class-api-client-v2.php';
 $api_client = new SEO_AI_Meta_API_Client_V2();
 $status = $api_client->get_backend_status();
