@@ -839,18 +839,20 @@ if ( empty( $settings ) ) {
 								<p style="margin: 0 0 24px 0; font-size: 13px; color: #1e40af; line-height: 1.6; opacity: 0.9;">
 									<?php esc_html_e( 'Download all meta tags as a CSV file for backup or migration purposes', 'seo-ai-meta-generator' ); ?>
 								</p>
-								<a href="<?php echo esc_url( add_query_arg( array( 'action' => 'seo_ai_meta_export', 'nonce' => wp_create_nonce( 'seo_ai_meta_export' ) ), admin_url( 'admin-post.php' ) ) ); ?>" 
-								   class="seo-ai-meta-export-btn"
-								   style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25); letter-spacing: -0.01em;"
-								   onmouseover="this.style.background='linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(59, 130, 246, 0.35)';"
-								   onmouseout="this.style.background='linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(59, 130, 246, 0.25)';">
-									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-										<polyline points="7 10 12 15 17 10"/>
-										<line x1="12" y1="15" x2="12" y2="3"/>
-									</svg>
-									<span><?php esc_html_e( 'Export CSV', 'seo-ai-meta-generator' ); ?></span>
-								</a>
+								<div style="display: flex; flex-direction: column;">
+									<a href="<?php echo esc_url( add_query_arg( array( 'action' => 'seo_ai_meta_export', 'nonce' => wp_create_nonce( 'seo_ai_meta_export' ) ), admin_url( 'admin-post.php' ) ) ); ?>" 
+									   class="seo-ai-meta-export-btn"
+									   style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25); letter-spacing: -0.01em;"
+									   onmouseover="this.style.background='linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(59, 130, 246, 0.35)';"
+									   onmouseout="this.style.background='linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(59, 130, 246, 0.25)';">
+										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+											<polyline points="7 10 12 15 17 10"/>
+											<line x1="12" y1="15" x2="12" y2="3"/>
+										</svg>
+										<span><?php esc_html_e( 'Export CSV', 'seo-ai-meta-generator' ); ?></span>
+									</a>
+								</div>
 							</div>
 						</div>
 
