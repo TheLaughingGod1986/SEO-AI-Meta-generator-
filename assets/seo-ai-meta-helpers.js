@@ -5,14 +5,28 @@
 (function() {
 	'use strict';
 
-	// Debug: Log that helpers.js is loaded
-	console.log('SEO AI Meta: Helpers loaded');
+	// Debug flag - set via WordPress (WP_DEBUG)
+	window.SEO_AI_META_DEBUG = window.SEO_AI_META_DEBUG || false;
+
+	// Debug logging helper
+	window.seoAiMetaDebug = function() {
+		if (window.SEO_AI_META_DEBUG && typeof console !== 'undefined' && console.log) {
+			console.log.apply(console, ['[SEO AI Meta]'].concat(Array.prototype.slice.call(arguments)));
+		}
+	};
+
+	// Error logging helper (always show errors)
+	window.seoAiMetaError = function() {
+		if (typeof console !== 'undefined' && console.error) {
+			console.error.apply(console, ['[SEO AI Meta ERROR]'].concat(Array.prototype.slice.call(arguments)));
+		}
+	};
+
+	seoAiMetaDebug('Helpers loaded');
 
 	// Track events (stub function - can be connected to analytics later)
 	window.seoAiMetaTrackEvent = function(eventName, eventData) {
-		if (typeof console !== 'undefined' && console.log) {
-			console.log('SEO AI Meta Event:', eventName, eventData);
-		}
+		seoAiMetaDebug('Event:', eventName, eventData);
 
 		// You can integrate with Google Analytics, Mixpanel, etc. here
 		if (typeof gtag !== 'undefined') {
@@ -22,7 +36,7 @@
 
 	// Logout function
 	window.seoAiMetaLogout = function() {
-		console.log('SEO AI Meta: seoAiMetaLogout called');
+		seoAiMetaDebug('seoAiMetaLogout called');
 
 		if (!confirm('Are you sure you want to logout?')) {
 			return;
@@ -30,7 +44,7 @@
 
 		// Check if seoAiMetaAjax is defined
 		if (typeof seoAiMetaAjax === 'undefined') {
-			console.error('SEO AI Meta: seoAiMetaAjax is not defined!');
+			seoAiMetaError('seoAiMetaAjax is not defined!');
 			alert('Configuration error. Please refresh the page.');
 			return;
 		}
@@ -251,7 +265,7 @@
 	}
 
 	// Debug: Confirm all functions are registered
-	console.log('SEO AI Meta: Functions registered:', {
+	seoAiMetaDebug('Functions registered:', {
 		seoAiMetaTrackEvent: typeof window.seoAiMetaTrackEvent,
 		seoAiMetaLogout: typeof window.seoAiMetaLogout,
 		seoAiMetaTogglePasswordVisibility: typeof window.seoAiMetaTogglePasswordVisibility,
@@ -261,10 +275,10 @@
 
 	// BACKUP: Add jQuery-based click handlers in case onclick doesn't work
 	jQuery(document).ready(function($) {
-		console.log('SEO AI Meta: Setting up jQuery click handlers as backup...');
+		seoAiMetaDebug('Setting up jQuery click handlers as backup...');
 
 		// Log current state of all functions
-		console.log('SEO AI Meta: Function availability check:', {
+		seoAiMetaDebug('Function availability check:', {
 			seoAiMetaShowLoginModal: typeof window.seoAiMetaShowLoginModal,
 			seoAiMetaShowUpgradeModal: typeof window.seoAiMetaShowUpgradeModal,
 			seoAiMetaCloseModal: typeof window.seoAiMetaCloseModal,
@@ -275,40 +289,40 @@
 
 		// Login button handler
 		$(document).on('click', '.seo-ai-meta-btn-login', function(e) {
-			console.log('SEO AI Meta: Login button clicked (jQuery handler)');
+			seoAiMetaDebug('Login button clicked (jQuery handler)');
 			if (typeof window.seoAiMetaShowLoginModal === 'function') {
 				window.seoAiMetaShowLoginModal();
 			} else {
-				console.error('SEO AI Meta: seoAiMetaShowLoginModal not available!');
+				seoAiMetaError('seoAiMetaShowLoginModal not available!');
 				alert('Login modal not ready. Please refresh the page and check console for errors.');
 			}
 		});
 
 		// Logout button handler
 		$(document).on('click', '.seo-ai-meta-btn-logout', function(e) {
-			console.log('SEO AI Meta: Logout button clicked (jQuery handler)');
+			seoAiMetaDebug('Logout button clicked (jQuery handler)');
 			if (typeof window.seoAiMetaLogout === 'function') {
 				window.seoAiMetaLogout();
 			} else {
-				console.error('SEO AI Meta: seoAiMetaLogout not available!');
+				seoAiMetaError('seoAiMetaLogout not available!');
 			}
 		});
 
 		// Generic upgrade button handler (for any button with upgrade in onclick)
 		$(document).on('click', '[onclick*="seoAiMetaShowUpgradeModal"]', function(e) {
-			console.log('SEO AI Meta: Upgrade button clicked (jQuery handler)');
+			seoAiMetaDebug('Upgrade button clicked (jQuery handler)');
 			// Check if function exists - if not, call it ourselves as backup
 			if (typeof window.seoAiMetaShowUpgradeModal !== 'function') {
-				console.error('SEO AI Meta: seoAiMetaShowUpgradeModal not available!');
+				seoAiMetaError('seoAiMetaShowUpgradeModal not available!');
 				e.preventDefault();
 				alert('Upgrade modal not ready. Please refresh the page and check console for errors.');
 			} else {
-				console.log('SEO AI Meta: seoAiMetaShowUpgradeModal is available, onclick should work');
+				seoAiMetaDebug('seoAiMetaShowUpgradeModal is available, onclick should work');
 			}
 		});
 
-		console.log('SEO AI Meta: jQuery click handlers registered');
-		console.log('SEO AI Meta: Total buttons found:', {
+		seoAiMetaDebug('jQuery click handlers registered');
+		seoAiMetaDebug('Total buttons found:', {
 			loginButtons: $('.seo-ai-meta-btn-login').length,
 			logoutButtons: $('.seo-ai-meta-btn-logout').length,
 			upgradeButtons: $('[onclick*="seoAiMetaShowUpgradeModal"]').length

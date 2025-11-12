@@ -1,27 +1,21 @@
 <?php
 /**
- * Fired during plugin deactivation.
+ * Legacy deactivator compatibility.
  *
- * This class defines all code necessary to run during the plugin's deactivation.
- *
- * @package    SEO_AI_Meta
- * @subpackage SEO_AI_Meta/includes
+ * @package SEO_AI_Meta
  */
-class SEO_AI_Meta_Deactivator {
 
+if ( ! class_exists( 'SEO_AI_Meta_Deactivator', false ) ) {
 	/**
-	 * Short Description. (use period)
-	 *
-	 * Long Description.
-	 *
-	 * @since    1.0.0
+	 * Legacy deactivator class that wraps the new namespaced Deactivator.
+	 * Cannot extend the new Deactivator because it's final, so we use composition.
 	 */
-	public static function deactivate() {
-		// Clear transients
-		delete_transient( 'seo_ai_meta_usage_cache' );
-
-		// Note: We don't delete user meta or options on deactivation
-		// This allows users to reactivate without losing data
+	class SEO_AI_Meta_Deactivator {
+		/**
+		 * Execute deactivation tasks.
+		 */
+		public static function deactivate() {
+			return \SeoAiMeta\Core\Deactivator::deactivate();
+		}
 	}
 }
-

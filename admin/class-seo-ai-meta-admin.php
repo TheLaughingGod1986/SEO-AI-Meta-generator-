@@ -78,20 +78,11 @@ class SEO_AI_Meta_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts( $hook ) {
-		// Load auth modal FIRST so its functions are available
-		wp_enqueue_script(
-			$this->plugin_name . '-auth-modal',
-			SEO_AI_META_PLUGIN_URL . 'assets/seo-ai-meta-auth-modal.js',
-			array( 'wp-element' ),
-			$this->version,
-			false  // Load in header so functions are available when buttons render
-		);
-
-		// Load helper functions (depends on auth-modal being loaded first)
+		// Load helper functions
 		wp_enqueue_script(
 			$this->plugin_name . '-helpers',
 			SEO_AI_META_PLUGIN_URL . 'assets/seo-ai-meta-helpers.js',
-			array( 'jquery', $this->plugin_name . '-auth-modal' ),
+			array( 'jquery' ),
 			$this->version,
 			false
 		);
@@ -103,6 +94,26 @@ class SEO_AI_Meta_Admin {
 			array( 'jquery', $this->plugin_name . '-helpers' ),
 			$this->version,
 			false
+		);
+
+		// Load authentication modal
+		wp_enqueue_script( 'wp-element' );
+		wp_enqueue_script(
+			$this->plugin_name . '-auth-modal',
+			SEO_AI_META_PLUGIN_URL . 'assets/seo-ai-meta-auth-modal.js',
+			array( 'wp-element' ),
+			$this->version,
+			false
+		);
+
+		// Localize auth modal script
+		wp_localize_script(
+			$this->plugin_name . '-auth-modal',
+			'seoAiMetaAuth',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( 'seo_ai_meta_nonce' ),
+			)
 		);
 
 		// Load metabox script on post edit pages
@@ -135,6 +146,13 @@ class SEO_AI_Meta_Admin {
 				'nonce'   => wp_create_nonce( 'seo_ai_meta_nonce' ),
 				'bulk_nonce' => wp_create_nonce( 'seo_ai_meta_bulk_nonce' ),
 			)
+		);
+
+		// Add debug flag to JavaScript (set from WP_DEBUG)
+		wp_add_inline_script(
+			$this->plugin_name . '-helpers',
+			'window.SEO_AI_META_DEBUG = ' . ( defined( 'WP_DEBUG' ) && WP_DEBUG ? 'true' : 'false' ) . ';',
+			'before'
 		);
 	}
 
@@ -337,6 +355,47 @@ class SEO_AI_Meta_Admin {
 			$output['auto_generate'] = (bool) $input['auto_generate'];
 		}
 
+		// Stripe Price IDs (admin only)
+		if ( current_user_can( 'manage_options' ) ) {
+			$price_ids = array();
+
+			// Validate Pro price ID
+			if ( isset( $input['stripe_pro_price_id'] ) ) {
+				$pro_id = sanitize_text_field( trim( $input['stripe_pro_price_id'] ) );
+				if ( ! empty( $pro_id ) && preg_match( '/^price_[a-zA-Z0-9]{8,}$/', $pro_id ) ) {
+					$price_ids['pro'] = $pro_id;
+				} elseif ( ! empty( $pro_id ) ) {
+					add_settings_error(
+						'seo_ai_meta_settings',
+						'invalid_pro_price_id',
+						__( 'Invalid Pro Plan Price ID format. Must start with "price_" and contain valid characters.', 'seo-ai-meta-generator' ),
+						'error'
+					);
+				}
+			}
+
+			// Validate Agency price ID
+			if ( isset( $input['stripe_agency_price_id'] ) ) {
+				$agency_id = sanitize_text_field( trim( $input['stripe_agency_price_id'] ) );
+				if ( ! empty( $agency_id ) && preg_match( '/^price_[a-zA-Z0-9]{8,}$/', $agency_id ) ) {
+					$price_ids['agency'] = $agency_id;
+				} elseif ( ! empty( $agency_id ) ) {
+					add_settings_error(
+						'seo_ai_meta_settings',
+						'invalid_agency_price_id',
+						__( 'Invalid Agency Plan Price ID format. Must start with "price_" and contain valid characters.', 'seo-ai-meta-generator' ),
+						'error'
+					);
+				}
+			}
+
+			// Save price IDs to database
+			if ( ! empty( $price_ids ) ) {
+				require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-seo-ai-meta-database.php';
+				SEO_AI_Meta_Database::update_setting( 'price_ids', $price_ids );
+			}
+		}
+
 		// Preserve existing settings
 		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-seo-ai-meta-database.php';
 		$existing = SEO_AI_Meta_Database::get_setting( 'settings', array() );
@@ -417,6 +476,24 @@ class SEO_AI_Meta_Admin {
 		// Check file upload
 		if ( ! isset( $_FILES['import_file'] ) || $_FILES['import_file']['error'] !== UPLOAD_ERR_OK ) {
 			wp_redirect( add_query_arg( array( 'page' => 'seo-ai-meta-generator', 'tab' => 'settings', 'import_error' => 'file_upload_error' ), admin_url( 'edit.php' ) ) );
+			exit;
+		}
+
+		// Validate file type
+		$file_name = isset( $_FILES['import_file']['name'] ) ? sanitize_file_name( $_FILES['import_file']['name'] ) : '';
+		$file_ext = strtolower( pathinfo( $file_name, PATHINFO_EXTENSION ) );
+
+		if ( $file_ext !== 'csv' ) {
+			wp_redirect( add_query_arg( array( 'page' => 'seo-ai-meta-generator', 'tab' => 'settings', 'import_error' => 'invalid_file_type' ), admin_url( 'edit.php' ) ) );
+			exit;
+		}
+
+		// Check MIME type
+		$file_type = isset( $_FILES['import_file']['type'] ) ? $_FILES['import_file']['type'] : '';
+		$allowed_mime_types = array( 'text/csv', 'text/plain', 'application/csv', 'text/comma-separated-values', 'application/excel', 'application/vnd.ms-excel' );
+
+		if ( ! in_array( $file_type, $allowed_mime_types, true ) ) {
+			wp_redirect( add_query_arg( array( 'page' => 'seo-ai-meta-generator', 'tab' => 'settings', 'import_error' => 'invalid_mime_type' ), admin_url( 'edit.php' ) ) );
 			exit;
 		}
 

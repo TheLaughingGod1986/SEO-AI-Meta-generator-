@@ -3,7 +3,7 @@
  * Plugin Name: SEO AI Meta Generator
  * Plugin URI: https://wordpress.org/plugins/seo-ai-meta-generator/
  * Description: AI-powered SEO meta title and description generator for WordPress posts. Uses GPT-4 to create optimized meta tags that boost search engine rankings. Free tier: 10 posts/month.
- * Version: 1.1.6
+ * Version: 1.1.7
  * Author: Benjamin Oats
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -46,7 +46,7 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG && PHP_VERSION_ID >= 80300 ) {
 	error_reporting( $error_reporting & ~E_DEPRECATED );
 }
 
-define( 'SEO_AI_META_VERSION', '1.1.6' );
+define( 'SEO_AI_META_VERSION', '1.1.7' );
 define( 'SEO_AI_META_PLUGIN_FILE', __FILE__ );
 define( 'SEO_AI_META_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SEO_AI_META_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -55,31 +55,22 @@ define( 'SEO_AI_META_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 /**
  * Register the activation hook.
  */
-function activate_seo_ai_meta() {
-	require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-seo-ai-meta-activator.php';
-	SEO_AI_Meta_Activator::activate();
-}
+register_activation_hook(
+	__FILE__,
+	static function (): void {
+		\SeoAiMeta\Core\Activator::activate();
+	}
+);
 
-/**
- * Register the deactivation hook.
- */
-function deactivate_seo_ai_meta() {
-	require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-seo-ai-meta-deactivator.php';
-	SEO_AI_Meta_Deactivator::deactivate();
-}
+register_deactivation_hook(
+	__FILE__,
+	static function (): void {
+		\SeoAiMeta\Core\Deactivator::deactivate();
+	}
+);
 
-register_activation_hook( __FILE__, 'activate_seo_ai_meta' );
-register_deactivation_hook( __FILE__, 'deactivate_seo_ai_meta' );
+require_once SEO_AI_META_PLUGIN_DIR . 'includes/Autoloader.php';
 
-require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-seo-ai-meta.php';
+( new \SeoAiMeta\Autoloader( SEO_AI_META_PLUGIN_DIR . 'src' ) )->register();
 
-/**
- * Begins execution of the plugin.
- */
-function run_seo_ai_meta() {
-	$plugin = new SEO_AI_Meta();
-	$plugin->run();
-}
-
-run_seo_ai_meta();
-
+( new \SeoAiMeta\Core\Plugin() )->run();

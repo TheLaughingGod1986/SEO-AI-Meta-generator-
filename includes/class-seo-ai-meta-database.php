@@ -404,7 +404,10 @@ class SEO_AI_Meta_Database {
 		);
 
 		$posts = $wpdb->get_results(
-			"SELECT DISTINCT post_id FROM {$wpdb->postmeta} WHERE meta_key LIKE '_seo_ai_meta_%'"
+			$wpdb->prepare(
+				"SELECT DISTINCT post_id FROM {$wpdb->postmeta} WHERE meta_key LIKE %s",
+				'_seo_ai_meta_%'
+			)
 		);
 
 		foreach ( $posts as $post ) {
@@ -494,7 +497,8 @@ class SEO_AI_Meta_Database {
 
 		foreach ( $tables as $table ) {
 			$table_name = self::get_table_name( $table );
-			$wpdb->query( "DROP TABLE IF EXISTS {$table_name}" );
+			// Safe: table name is from whitelist via get_table_name()
+			$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table_name ) );
 		}
 
 		delete_option( 'seo_ai_meta_db_version' );

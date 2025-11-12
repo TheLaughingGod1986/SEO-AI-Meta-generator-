@@ -25,7 +25,7 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 * ✅ **Character Counters** - Real-time feedback on title (50-60 chars) and description (150-160 chars) length
 * ✅ **Easy to Use** - Simple meta box in post editor with one-click generation
 * ✅ **Usage Tracking** - Monitor your monthly quota with visual progress bars
-* ✅ **Subscription Plans** - Free (10 posts), Pro (100 posts), Agency (1000 posts)
+* ✅ **Subscription Plans** - Free (50 posts), Pro (500 posts), Agency (5000 posts)
 * ✅ **Stripe Integration** - Secure payment processing with automatic subscription management
 
 ### 🚀 Why You Need This Plugin
@@ -54,13 +54,13 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 * Individual post generation
 * Usage tracking dashboard
 
-**Pro Plan** (£12.99/month, 100 posts):
+**Pro Plan** (£14.99/month, 500 posts):
 * Everything in Free
 * GPT-4-turbo for advanced quality
 * Bulk generation
 * Priority support
 
-**Agency Plan** (£49.99/month, 1000 posts):
+**Agency Plan** (£59.99/month, 5000 posts):
 * Everything in Pro
 * Maximum quota for agencies
 * White-label options
@@ -159,7 +159,7 @@ A: Yes! Enter your API key in Settings > SEO AI Meta > Settings tab.
 No! The plugin can use credentials from your Render environment, or you can optionally enter your own API key.
 
 = What's the difference between Free and Pro? =
-Free uses GPT-4o-mini with 10 posts/month. Pro uses GPT-4-turbo with 100 posts/month and includes bulk generation.
+Free uses GPT-4o-mini with 50 posts/month. Pro uses GPT-4-turbo with 500 posts/month and includes bulk generation.
 
 = Can I edit generated meta tags? =
 Yes! Generated meta tags appear in editable fields. You can customize them as needed.
@@ -193,7 +193,7 @@ Free plan uses GPT-4o-mini. Pro and Agency plans use GPT-4-turbo for higher qual
 Yes, all generated meta tags appear in editable fields in the post editor meta box.
 
 = How many posts can I generate per month? =
-Free: 10 posts, Pro: 100 posts, Agency: 1000 posts. Limits reset monthly.
+Free: 50 posts, Pro: 500 posts, Agency: 5000 posts. Limits reset monthly.
 
 = Will this work with Yoast SEO or Rank Math? =
 Yes, the plugin outputs standard HTML meta tags compatible with all SEO plugins.

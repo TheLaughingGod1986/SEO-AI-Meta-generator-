@@ -13,8 +13,8 @@ class SEO_AI_Meta_Core {
 	 * SEO AI Meta Stripe products created via CLI
 	 */
 	private const DEFAULT_CHECKOUT_PRICE_IDS = array(
-		'pro'     => 'price_1SQ72OJl9Rm418cMruYB5Pgb', // SEO AI Meta Pro - £12.99/month (LIVE)
-		'agency'  => 'price_1SQ72KJl9Rm418cMB0CYh8xe', // SEO AI Meta Agency - £49.99/month (LIVE)
+		'pro'     => 'price_1SQ72OJl9Rm418cMruYB5Pgb', // SEO AI Meta Pro - £14.99/month (LIVE)
+		'agency'  => 'price_1SQ72KJl9Rm418cMB0CYh8xe', // SEO AI Meta Agency - £59.99/month (LIVE)
 	);
 
 	/**
@@ -440,17 +440,19 @@ class SEO_AI_Meta_Core {
 	}
 
 	/**
-	 * Register AJAX handlers for billing
+	 * Register AJAX handlers for billing and authentication
 	 */
 	public function register_ajax_handlers() {
-		add_action( 'wp_ajax_seo_ai_meta_get_subscription', array( $this, 'ajax_get_subscription' ) );
-		add_action( 'wp_ajax_seo_ai_meta_open_portal', array( $this, 'ajax_open_portal' ) );
-		add_action( 'wp_ajax_seo_ai_meta_get_plans', array( $this, 'ajax_get_plans' ) );
+		// Authentication AJAX handlers
 		add_action( 'wp_ajax_seo_ai_meta_login', array( $this, 'ajax_login' ) );
 		add_action( 'wp_ajax_seo_ai_meta_register', array( $this, 'ajax_register' ) );
 		add_action( 'wp_ajax_seo_ai_meta_logout', array( $this, 'ajax_logout' ) );
 		add_action( 'wp_ajax_seo_ai_meta_forgot_password', array( $this, 'ajax_forgot_password' ) );
-		add_action( 'wp_ajax_seo_ai_meta_reset_password', array( $this, 'ajax_reset_password' ) );
+
+		// Billing AJAX handlers
+		add_action( 'wp_ajax_seo_ai_meta_get_subscription', array( $this, 'ajax_get_subscription' ) );
+		add_action( 'wp_ajax_seo_ai_meta_open_portal', array( $this, 'ajax_open_portal' ) );
+		add_action( 'wp_ajax_seo_ai_meta_get_plans', array( $this, 'ajax_get_plans' ) );
 
 		// Site-wide licensing AJAX handlers
 		add_action( 'wp_ajax_seo_ai_meta_register_site', array( $this, 'ajax_register_site' ) );
@@ -527,22 +529,22 @@ class SEO_AI_Meta_Core {
 					'images'  => 10,
 					'features' => array( '10 posts per month' ),
 				),
-				array(
-					'id'      => 'pro',
-					'name'    => 'Pro',
-					'price'   => 12.99,
-					'images'  => 100,
-					'priceId' => $this->get_checkout_price_id( 'pro' ),
-					'features' => array( '100 posts per month' ),
-				),
-				array(
-					'id'      => 'agency',
-					'name'    => 'Agency',
-					'price'   => 49.99,
-					'images'  => 1000,
-					'priceId' => $this->get_checkout_price_id( 'agency' ),
-					'features' => array( '1000 posts per month' ),
-				),
+			array(
+				'id'      => 'pro',
+				'name'    => 'Pro',
+				'price'   => 14.99,
+				'images'  => 500,
+				'priceId' => $this->get_checkout_price_id( 'pro' ),
+				'features' => array( '500 posts per month' ),
+			),
+			array(
+				'id'      => 'agency',
+				'name'    => 'Agency',
+				'price'   => 59.99,
+				'images'  => 5000,
+				'priceId' => $this->get_checkout_price_id( 'agency' ),
+				'features' => array( '5000 posts per month' ),
+			),
 			);
 		}
 
@@ -551,134 +553,6 @@ class SEO_AI_Meta_Core {
 
 	/**
 	 * AJAX: Login user
-	 */
-	public function ajax_login() {
-		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_seo_ai_meta' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'seo-ai-meta-generator' ) ) );
-		}
-
-		$email = isset( $_POST['email'] ) ? sanitize_email( $_POST['email'] ) : '';
-		$password = isset( $_POST['password'] ) ? $_POST['password'] : '';
-
-		if ( empty( $email ) || empty( $password ) ) {
-			wp_send_json_error( array( 'message' => __( 'Email and password are required.', 'seo-ai-meta-generator' ) ) );
-		}
-
-		$result = $this->api_client->login( $email, $password );
-
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
-		}
-
-		wp_send_json_success( array( 'message' => __( 'Login successful!', 'seo-ai-meta-generator' ) ) );
-	}
-
-	/**
-	 * AJAX: Register new user
-	 */
-	public function ajax_register() {
-		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_seo_ai_meta' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'seo-ai-meta-generator' ) ) );
-		}
-
-		$email = isset( $_POST['email'] ) ? sanitize_email( $_POST['email'] ) : '';
-		$password = isset( $_POST['password'] ) ? $_POST['password'] : '';
-
-		if ( empty( $email ) || empty( $password ) ) {
-			wp_send_json_error( array( 'message' => __( 'Email and password are required.', 'seo-ai-meta-generator' ) ) );
-		}
-
-		if ( strlen( $password ) < 6 ) {
-			wp_send_json_error( array( 'message' => __( 'Password must be at least 6 characters long.', 'seo-ai-meta-generator' ) ) );
-		}
-
-		$result = $this->api_client->register( $email, $password );
-
-		if ( is_wp_error( $result ) ) {
-			$error_message = $result->get_error_message();
-			// Log the error for debugging
-			error_log( 'SEO AI Meta Registration Error: ' . $error_message );
-			wp_send_json_error( array( 'message' => $error_message ) );
-		}
-
-		wp_send_json_success( array( 'message' => __( 'Registration successful! You are now logged in.', 'seo-ai-meta-generator' ) ) );
-	}
-
-	/**
-	 * AJAX: Logout user
-	 */
-	public function ajax_logout() {
-		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_seo_ai_meta' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'seo-ai-meta-generator' ) ) );
-		}
-
-		$this->api_client->clear_token();
-		wp_send_json_success( array( 'message' => __( 'Logged out successfully.', 'seo-ai-meta-generator' ) ) );
-	}
-
-	/**
-	 * AJAX: Request password reset
-	 */
-	public function ajax_forgot_password() {
-		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_seo_ai_meta' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'seo-ai-meta-generator' ) ) );
-		}
-
-		$email = isset( $_POST['email'] ) ? sanitize_email( $_POST['email'] ) : '';
-
-		if ( empty( $email ) ) {
-			wp_send_json_error( array( 'message' => __( 'Email is required.', 'seo-ai-meta-generator' ) ) );
-		}
-
-		$result = $this->api_client->request_password_reset( $email );
-
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
-		}
-
-		wp_send_json_success( array( 'message' => __( 'Password reset email sent. Please check your inbox.', 'seo-ai-meta-generator' ) ) );
-	}
-
-	/**
-	 * AJAX: Reset password with token
-	 */
-	public function ajax_reset_password() {
-		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_seo_ai_meta' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'seo-ai-meta-generator' ) ) );
-		}
-
-		$token = isset( $_POST['token'] ) ? sanitize_text_field( $_POST['token'] ) : '';
-		$password = isset( $_POST['password'] ) ? $_POST['password'] : '';
-
-		if ( empty( $token ) || empty( $password ) ) {
-			wp_send_json_error( array( 'message' => __( 'Token and password are required.', 'seo-ai-meta-generator' ) ) );
-		}
-
-		if ( strlen( $password ) < 6 ) {
-			wp_send_json_error( array( 'message' => __( 'Password must be at least 6 characters long.', 'seo-ai-meta-generator' ) ) );
-		}
-
-		$result = $this->api_client->reset_password( $token, $password );
-
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
-		}
-
-		wp_send_json_success( array( 'message' => __( 'Password reset successfully. You can now login with your new password.', 'seo-ai-meta-generator' ) ) );
-	}
-
-	/**
-	 * AJAX: Register new site for site-wide licensing
 	 */
 	public function ajax_register_site() {
 		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
@@ -858,6 +732,25 @@ class SEO_AI_Meta_Core {
 	}
 
 	/**
+	 * Get default price ID for a plan (from constants).
+	 *
+	 * @param string $plan Plan key (pro, agency).
+	 * @return string|null Default price ID or null if not found.
+	 */
+	public static function get_default_price_id( $plan ) {
+		return isset( self::DEFAULT_CHECKOUT_PRICE_IDS[ $plan ] ) ? self::DEFAULT_CHECKOUT_PRICE_IDS[ $plan ] : null;
+	}
+
+	/**
+	 * Get all default price IDs.
+	 *
+	 * @return array Associative array of plan => price_id.
+	 */
+	public static function get_default_price_ids() {
+		return self::DEFAULT_CHECKOUT_PRICE_IDS;
+	}
+
+	/**
 	 * Replace legacy AltText AI price IDs with current SEO AI Meta defaults.
 	 *
 	 * @param string $plan     Plan key.
@@ -1021,5 +914,99 @@ class SEO_AI_Meta_Core {
 				delete_transient( 'seo_ai_meta_plan_price_ids' );
 			}
 		}
+	}
+
+	/**
+	 * AJAX: Login
+	 */
+	public function ajax_login() {
+		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
+
+		$email    = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+		$password = isset( $_POST['password'] ) ? wp_unslash( $_POST['password'] ) : '';
+
+		if ( empty( $email ) || empty( $password ) ) {
+			wp_send_json_error( array( 'message' => __( 'Please provide email and password.', 'seo-ai-meta-generator' ) ) );
+		}
+
+		$result = $this->api_client->login( $email, $password );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( array(
+			'message' => __( 'Login successful!', 'seo-ai-meta-generator' ),
+			'user'    => $result,
+		) );
+	}
+
+	/**
+	 * AJAX: Register
+	 */
+	public function ajax_register() {
+		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
+
+		$email    = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+		$password = isset( $_POST['password'] ) ? wp_unslash( $_POST['password'] ) : '';
+
+		if ( empty( $email ) || empty( $password ) ) {
+			wp_send_json_error( array( 'message' => __( 'Please provide email and password.', 'seo-ai-meta-generator' ) ) );
+		}
+
+		if ( strlen( $password ) < 8 ) {
+			wp_send_json_error( array( 'message' => __( 'Password must be at least 8 characters long.', 'seo-ai-meta-generator' ) ) );
+		}
+
+		$result = $this->api_client->register( $email, $password );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( array(
+			'message' => __( 'Registration successful!', 'seo-ai-meta-generator' ),
+			'user'    => $result,
+		) );
+	}
+
+	/**
+	 * AJAX: Logout
+	 */
+	public function ajax_logout() {
+		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
+
+		$result = $this->api_client->logout();
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( array(
+			'message' => __( 'Logout successful!', 'seo-ai-meta-generator' ),
+		) );
+	}
+
+	/**
+	 * AJAX: Forgot Password
+	 */
+	public function ajax_forgot_password() {
+		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
+
+		$email = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+
+		if ( empty( $email ) ) {
+			wp_send_json_error( array( 'message' => __( 'Please provide your email address.', 'seo-ai-meta-generator' ) ) );
+		}
+
+		$result = $this->api_client->forgot_password( $email );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( array(
+			'message' => __( 'Password reset link sent! Please check your email.', 'seo-ai-meta-generator' ),
+		) );
 	}
 }

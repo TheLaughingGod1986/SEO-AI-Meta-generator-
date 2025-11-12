@@ -1,26 +1,35 @@
 <?php
 /**
- * Define the internationalization functionality
+ * Legacy i18n compatibility.
  *
- * Loads and defines the internationalization files for this plugin
- * so that it is ready for translation.
- *
- * @package    SEO_AI_Meta
- * @subpackage SEO_AI_Meta/includes
+ * @package SEO_AI_Meta
  */
-class SEO_AI_Meta_i18n {
 
+if ( ! class_exists( 'SEO_AI_Meta_i18n', false ) ) {
 	/**
-	 * Load the plugin text domain for translation.
-	 *
-	 * @since    1.0.0
+	 * Legacy i18n class that wraps the new namespaced I18n.
+	 * Cannot extend the new I18n because it's final, so we use composition.
 	 */
-	public function load_plugin_textdomain() {
-		load_plugin_textdomain(
-			'seo-ai-meta-generator',
-			false,
-			dirname( dirname( plugin_basename( __FILE__ ) ) ) . '/languages/'
-		);
+	class SEO_AI_Meta_i18n {
+		/**
+		 * Instance of the new namespaced I18n.
+		 *
+		 * @var \SeoAiMeta\Core\I18n
+		 */
+		private $i18n;
+
+		/**
+		 * Constructor.
+		 */
+		public function __construct() {
+			$this->i18n = new \SeoAiMeta\Core\I18n();
+		}
+
+		/**
+		 * Load plugin textdomain.
+		 */
+		public function load_plugin_textdomain() {
+			return $this->i18n->load_plugin_textdomain();
+		}
 	}
 }
-

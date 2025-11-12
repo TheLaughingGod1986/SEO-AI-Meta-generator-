@@ -79,15 +79,6 @@ $agency_url = add_query_arg( array(
 		</div>
 
 		<div class="seo-ai-meta-upgrade-modal__body">
-			<?php if ( ! $is_authenticated ) : ?>
-				<div class="seo-ai-meta-auth-notice">
-					<div class="seo-ai-meta-auth-notice__icon">🔒</div>
-					<p>
-						<strong><?php esc_html_e( 'Account Required', 'seo-ai-meta-generator' ); ?></strong>
-						<?php esc_html_e( 'Please login or create an account to subscribe to a plan.', 'seo-ai-meta-generator' ); ?>
-					</p>
-				</div>
-			<?php endif; ?>
 
 			<!-- Compare Plans Table -->
 			<div class="seo-ai-meta-compare-plans-container" style="margin-bottom: 32px;">
@@ -102,11 +93,11 @@ $agency_url = add_query_arg( array(
 							<th style="padding: 20px; text-align: center; font-size: 14px; font-weight: 600; color: #1f2937; border-bottom: 2px solid #e5e7eb; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); position: relative;">
 								<div style="position: absolute; top: 8px; right: 8px; background: #3b82f6; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;"><?php esc_html_e( 'POPULAR', 'seo-ai-meta-generator' ); ?></div>
 								<div style="font-size: 16px; margin-bottom: 4px;"><?php esc_html_e( 'Pro', 'seo-ai-meta-generator' ); ?></div>
-								<div style="font-size: 12px; color: #6b7280; font-weight: 400;"><?php esc_html_e( '£12.99/month', 'seo-ai-meta-generator' ); ?></div>
+								<div style="font-size: 12px; color: #6b7280; font-weight: 400;"><?php esc_html_e( '£14.99/month', 'seo-ai-meta-generator' ); ?></div>
 							</th>
 							<th style="padding: 20px; text-align: center; font-size: 14px; font-weight: 600; color: #1f2937; border-bottom: 2px solid #e5e7eb;">
 								<div style="font-size: 16px; margin-bottom: 4px;"><?php esc_html_e( 'Agency', 'seo-ai-meta-generator' ); ?></div>
-								<div style="font-size: 12px; color: #6b7280; font-weight: 400;"><?php esc_html_e( '£49.99/month', 'seo-ai-meta-generator' ); ?></div>
+								<div style="font-size: 12px; color: #6b7280; font-weight: 400;"><?php esc_html_e( '£59.99/month', 'seo-ai-meta-generator' ); ?></div>
 							</th>
 						</tr>
 					</thead>
@@ -117,10 +108,10 @@ $agency_url = add_query_arg( array(
 								<span style="color: #6b7280; font-size: 14px;"><?php esc_html_e( '50/month', 'seo-ai-meta-generator' ); ?></span>
 							</td>
 							<td style="padding: 16px 20px; text-align: center; background: #f8fafc;">
-								<span style="color: #1f2937; font-size: 14px; font-weight: 600;"><?php esc_html_e( '100/month', 'seo-ai-meta-generator' ); ?></span>
+								<span style="color: #1f2937; font-size: 14px; font-weight: 600;"><?php esc_html_e( '500/month', 'seo-ai-meta-generator' ); ?></span>
 							</td>
 							<td style="padding: 16px 20px; text-align: center;">
-								<span style="color: #1f2937; font-size: 14px; font-weight: 600;"><?php esc_html_e( '1,000/month', 'seo-ai-meta-generator' ); ?></span>
+								<span style="color: #1f2937; font-size: 14px; font-weight: 600;"><?php esc_html_e( '5,000/month', 'seo-ai-meta-generator' ); ?></span>
 							</td>
 						</tr>
 						<tr style="border-bottom: 1px solid #f3f4f6;">
@@ -205,22 +196,12 @@ $agency_url = add_query_arg( array(
 						<tr>
 							<td style="padding: 20px;"></td>
 							<td style="padding: 20px; text-align: center;">
-								<?php if ( ! $is_authenticated ) : ?>
-									<button type="button" onclick="seoAiMetaShowLoginModal(); seoAiMetaCloseModal();" style="padding: 10px 20px; background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; width: 100%; transition: all 0.2s;" onmouseover="this.style.background='#e5e7eb';" onmouseout="this.style.background='#f3f4f6';">
-										<?php esc_html_e( 'Current Plan', 'seo-ai-meta-generator' ); ?>
-									</button>
-								<?php else : ?>
-									<span style="color: #6b7280; font-size: 14px;"><?php esc_html_e( 'Current Plan', 'seo-ai-meta-generator' ); ?></span>
-								<?php endif; ?>
+								<span style="color: #6b7280; font-size: 14px;"><?php esc_html_e( 'Current Plan', 'seo-ai-meta-generator' ); ?></span>
 							</td>
 							<td style="padding: 20px; text-align: center; background: #f8fafc;">
-								<?php if ( ! $is_authenticated ) : ?>
-									<button type="button" onclick="seoAiMetaShowLoginModal(); seoAiMetaCloseModal();" style="padding: 12px 24px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; width: 100%; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px -1px rgba(59, 130, 246, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgba(59, 130, 246, 0.3)';">
-										<?php esc_html_e( 'Get Started', 'seo-ai-meta-generator' ); ?>
-									</button>
-								<?php elseif ( ! empty( $pro_price_id ) ) : ?>
+								<?php if ( ! empty( $pro_price_id ) ) : ?>
 									<a href="<?php echo esc_url( $pro_url ); ?>" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none; width: 100%; text-align: center; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px -1px rgba(59, 130, 246, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgba(59, 130, 246, 0.3)';">
-										<?php esc_html_e( 'Get Started', 'seo-ai-meta-generator' ); ?>
+										<?php esc_html_e( 'Get License Key', 'seo-ai-meta-generator' ); ?>
 									</a>
 								<?php else : ?>
 									<button type="button" disabled style="padding: 12px 24px; background: #d1d5db; color: #6b7280; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: not-allowed; width: 100%;">
@@ -229,13 +210,9 @@ $agency_url = add_query_arg( array(
 								<?php endif; ?>
 							</td>
 							<td style="padding: 20px; text-align: center;">
-								<?php if ( ! $is_authenticated ) : ?>
-									<button type="button" onclick="seoAiMetaShowLoginModal(); seoAiMetaCloseModal();" style="padding: 12px 24px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; width: 100%; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(34, 197, 94, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px -1px rgba(34, 197, 94, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgba(34, 197, 94, 0.3)';">
-										<?php esc_html_e( 'Get Started', 'seo-ai-meta-generator' ); ?>
-									</button>
-								<?php elseif ( ! empty( $agency_price_id ) ) : ?>
+								<?php if ( ! empty( $agency_price_id ) ) : ?>
 									<a href="<?php echo esc_url( $agency_url ); ?>" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none; width: 100%; text-align: center; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(34, 197, 94, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px -1px rgba(34, 197, 94, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgba(34, 197, 94, 0.3)';">
-										<?php esc_html_e( 'Get Started', 'seo-ai-meta-generator' ); ?>
+										<?php esc_html_e( 'Get License Key', 'seo-ai-meta-generator' ); ?>
 									</a>
 								<?php else : ?>
 									<button type="button" disabled style="padding: 12px 24px; background: #d1d5db; color: #6b7280; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: not-allowed; width: 100%;">
@@ -290,7 +267,7 @@ $agency_url = add_query_arg( array(
 
 <script>
 (function() {
-	console.log('SEO AI Meta: Upgrade modal script loading...');
+	if (window.seoAiMetaDebug) { window.seoAiMetaDebug(' Upgrade modal script loading...'); }
 
 	// Testimonials for upgrade modal
 	var modalTestimonials = [
@@ -374,15 +351,15 @@ $agency_url = add_query_arg( array(
 
 	// Alias for backward compatibility
 	window.seoAiMetaShowUpgradeModal = function() {
-		console.log('SEO AI Meta: seoAiMetaShowUpgradeModal called');
+		if (window.seoAiMetaDebug) { window.seoAiMetaDebug(' seoAiMetaShowUpgradeModal called'); }
 		seoAiMetaShowModal();
 	};
 	window.seoAiMetaCloseModal = seoAiMetaCloseModal;
 
-	console.log('SEO AI Meta: Modal functions registered:', {
+	if (window.seoAiMetaDebug) { window.seoAiMetaDebug(' Modal functions registered:', {
 		seoAiMetaShowUpgradeModal: typeof window.seoAiMetaShowUpgradeModal,
 		seoAiMetaCloseModal: typeof window.seoAiMetaCloseModal
-	});
+	}); }
 	
 	// Track button clicks with analytics
 	jQuery(document).ready(function($) {
@@ -438,7 +415,7 @@ $agency_url = add_query_arg( array(
 
 						// Debug log (only in debug mode)
 						<?php if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) : ?>
-						console.log('SEO AI Meta: Navigating to checkout URL:', link.getAttribute('href'));
+						if (window.seoAiMetaDebug) { window.seoAiMetaDebug(' Navigating to checkout URL:', link.getAttribute('href')); }
 						<?php endif; ?>
 
 						// Navigation should happen naturally - restore if it doesn't within 5 seconds
@@ -447,7 +424,7 @@ $agency_url = add_query_arg( array(
 								span.textContent = originalText;
 								link.style.opacity = '1';
 								<?php if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) : ?>
-								console.warn('SEO AI Meta: Navigation may have been blocked');
+								if (window.seoAiMetaDebug) { window.seoAiMetaDebug(' Navigation may have been blocked'); }
 								<?php endif; ?>
 							}
 						}, 5000);

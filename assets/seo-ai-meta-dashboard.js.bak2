@@ -140,7 +140,7 @@
 							processed++;
 						} else {
 							if (typeof seoAiMetaAjax !== 'undefined' && seoAiMetaAjax.debug) {
-							(window.seoAiMetaError || console.error)('Generation failed for post', postId, ':', response.data);
+							console.error('Generation failed for post', postId, ':', response.data);
 							}
 						}
 						
@@ -151,8 +151,8 @@
 					},
 					error: function(xhr, status, error) {
 						if (typeof seoAiMetaAjax !== 'undefined' && seoAiMetaAjax.debug) {
-						(window.seoAiMetaError || console.error)('AJAX Error for post', postId, ':', status, error);
-						(window.seoAiMetaError || console.error)('Response:', xhr.responseText);
+						console.error('AJAX Error for post', postId, ':', status, error);
+						console.error('Response:', xhr.responseText);
 						}
 						// Continue processing even on error
 						setTimeout(function() {
