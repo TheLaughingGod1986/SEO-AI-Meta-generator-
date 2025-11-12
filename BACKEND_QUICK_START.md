@@ -498,13 +498,13 @@ async function handleStripeWebhook(event) {
 
 **Recommendation:**
 ```
-STRIPE_API_KEY_HERE{32_random_characters}
-sk_test_{32_random_characters}  // For testing
+Format: STRIPE_API_KEY_HERE + 32 random characters
+Format: sk_test_ + 32 random characters  // For testing
 ```
 
 **Example:**
 ```
-STRIPE_API_KEY_HERE
+STRIPE_API_KEY_HERE (replace with your actual Stripe API key)
 ```
 
 **Generation:**
