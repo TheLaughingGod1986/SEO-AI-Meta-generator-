@@ -93,7 +93,7 @@ router.post('/checkout', authenticateToken, async (req, res) => {
 ### Step 4: Verify Stripe Key
 
 Make sure the Stripe key is working. Check Render environment variables:
-- `STRIPE_SECRET_KEY` should be set to: `sk_live_YOUR_KEY_HERE`
+- `STRIPE_SECRET_KEY` should be set to: `sk_live_YOUR_KEY_HERE` (replace with your actual Stripe secret key)
 
 ### Step 5: Deploy
 
