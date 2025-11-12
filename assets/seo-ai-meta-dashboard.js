@@ -47,8 +47,7 @@
 		setTimeout(function() {
 			var $ring = $('#seo-ai-meta-progress-ring');
 			if ($ring.length) {
-				var radius = 56; // Updated radius
-				var circumference = 2 * Math.PI * radius;
+				var circumference = 2 * Math.PI * 54; // radius = 54
 				var percentage = parseFloat($ring.attr('data-percentage') || $ring.closest('[data-percentage]').data('percentage') || 0);
 				var offset = circumference * (1 - (percentage / 100));
 				
@@ -74,7 +73,7 @@
 			$('.seo-ai-meta-post-checkbox').prop('checked', $(this).prop('checked'));
 		});
 
-		// Bulk generate button (old - for selected posts)
+		// Bulk generate button
 		$('#seo-ai-meta-bulk-generate-btn').on('click', function(e) {
 			e.preventDefault();
 			
@@ -165,198 +164,6 @@
 
 			// Start processing
 			processNext(0);
-		});
-
-		// Generate All button (new - for all pending posts)
-		$('#seo-ai-meta-bulk-generate-all-btn').on('click', function(e) {
-			e.preventDefault();
-			
-			var $btn = $(this);
-			var $logContainer = $('#seo-ai-meta-bulk-log-container');
-			var $log = $('#seo-ai-meta-bulk-log');
-			var $successContainer = $('#seo-ai-meta-bulk-success');
-			var $successLog = $('#seo-ai-meta-bulk-success-log');
-			var $progressRing = $('#bulk-progress-ring');
-			var $previewBtn = $('#seo-ai-meta-bulk-preview-btn');
-			
-			// Disable button and show loading state
-			$btn.prop('disabled', true).text('Generating...');
-			$logContainer.removeClass('hidden');
-			$log.html('');
-			$successContainer.addClass('hidden');
-			$successLog.html('');
-			
-			// Get all pending posts
-			$.ajax({
-				url: seoAiMetaAjax.ajaxurl,
-				type: 'POST',
-				data: {
-					action: 'seo_ai_meta_get_all_pending_posts',
-					nonce: seoAiMetaAjax.bulk_nonce
-				},
-				success: function(response) {
-					if (response.success && response.data.post_ids && response.data.post_ids.length > 0) {
-						var postIds = response.data.post_ids;
-						var posts = response.data.posts || [];
-						var total = postIds.length;
-						var processed = 0;
-						var failed = 0;
-						
-						// Helper function to format timestamp
-						function getTimestamp() {
-							var now = new Date();
-							return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-						}
-						
-						// Helper function to add log entry
-						function addLogEntry(message, type) {
-							var icon = '';
-							if (type === 'success') {
-								icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" class="flex-shrink-0"><path d="M20 6L9 17l-5-5"/></svg>';
-							} else if (type === 'processing') {
-								icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" class="flex-shrink-0 animate-spin"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>';
-							} else {
-								icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
-							}
-							
-							var entry = $('<div class="flex items-center gap-3 text-sm text-gray-700 py-1.5"></div>');
-							entry.html(icon + '<span>' + message + '</span><span class="ml-auto text-xs text-gray-500">' + getTimestamp() + '</span>');
-							$log.append(entry);
-							
-							// Auto-scroll to bottom
-							$log.scrollTop($log[0].scrollHeight);
-						}
-						
-						// Get initial counts from the progress ring display
-						var countText = $progressRing.closest('.relative').find('.text-3xl').text();
-						var counts = countText.split('/');
-						var initialOptimized = parseInt(counts[0]) || 0;
-						var initialTotal = parseInt(counts[1]) || total;
-						
-						// Helper function to update progress ring
-						function updateProgressRing(processedCount) {
-							var newOptimized = initialOptimized + processedCount;
-							var finalTotal = initialTotal; // Total stays the same
-							var percentage = finalTotal > 0 ? Math.round((newOptimized / finalTotal) * 100) : 0;
-							var radius = 56;
-							var circumference = 2 * Math.PI * radius;
-							var offset = circumference * (1 - (percentage / 100));
-							
-							$progressRing.css({
-								'stroke-dashoffset': offset,
-								'transition': 'stroke-dashoffset 0.3s ease'
-							});
-							
-							// Update text
-							var $countContainer = $progressRing.closest('.relative').find('.text-3xl').parent();
-							$countContainer.find('.text-3xl').text(newOptimized + '/' + finalTotal);
-						}
-						
-						// Process posts one by one
-						function processNext(index) {
-							if (index >= total) {
-								// All done
-								$btn.prop('disabled', false).text('Generate All');
-								
-								// Show success state
-								if (processed === total && failed === 0) {
-									$logContainer.addClass('hidden');
-									$successContainer.removeClass('hidden');
-									
-									// Add success animation
-									setTimeout(function() {
-										$successContainer.find('.seo-ai-meta-success-animation').addClass('animate-bounce');
-										setTimeout(function() {
-											$successContainer.find('.seo-ai-meta-success-animation').removeClass('animate-bounce');
-										}, 1000);
-									}, 100);
-									
-									// Move all log entries to success log
-									$log.find('div').each(function() {
-										var $entry = $(this).clone();
-										$successLog.append($entry);
-									});
-									
-									// Update progress ring to 100%
-									updateProgressRing(processed);
-									
-									// Reload page after 3 seconds to show updated state
-									setTimeout(function() {
-										location.reload();
-									}, 3000);
-								} else {
-									addLogEntry('Completed: ' + processed + ' of ' + total + ' posts processed' + (failed > 0 ? ' (' + failed + ' failed)' : ''), 'success');
-									$previewBtn.removeClass('hidden');
-								}
-								return;
-							}
-							
-							var postId = postIds[index];
-							var postTitle = '';
-							for (var i = 0; i < posts.length; i++) {
-								if (posts[i].id == postId) {
-									postTitle = posts[i].title;
-									break;
-								}
-							}
-							
-							// Add processing log entry
-							addLogEntry('Optimizing post ' + (index + 1) + ' of ' + total + '...', 'processing');
-							
-							// Generate meta for this post
-							$.ajax({
-								url: seoAiMetaAjax.ajaxurl,
-								type: 'POST',
-								data: {
-									action: 'seo_ai_meta_generate',
-									nonce: seoAiMetaAjax.nonce,
-									post_id: postId
-								},
-								success: function(response) {
-									if (response.success) {
-										processed++;
-										// Update last log entry to success
-										var $lastEntry = $log.find('div').last();
-										$lastEntry.html('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" class="flex-shrink-0"><path d="M20 6L9 17l-5-5"/></svg><span>Done</span><span class="ml-auto text-xs text-gray-500">' + getTimestamp() + '</span>');
-										updateProgressRing(processed, total);
-									} else {
-										failed++;
-										// Update last log entry to error
-										var $lastEntry = $log.find('div').last();
-										$lastEntry.html('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Failed</span><span class="ml-auto text-xs text-gray-500">' + getTimestamp() + '</span>');
-									}
-									
-									// Process next
-									setTimeout(function() {
-										processNext(index + 1);
-									}, 500); // Small delay between requests
-								},
-								error: function(xhr, status, error) {
-									failed++;
-									// Update last log entry to error
-									var $lastEntry = $log.find('div').last();
-									$lastEntry.html('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Failed</span><span class="ml-auto text-xs text-gray-500">' + getTimestamp() + '</span>');
-									
-									// Continue processing even on error
-									setTimeout(function() {
-										processNext(index + 1);
-									}, 500);
-								}
-							});
-						}
-						
-						// Start processing
-						processNext(0);
-					} else {
-						alert('No posts found without meta tags.');
-						$btn.prop('disabled', false).text('Generate All');
-					}
-				},
-				error: function() {
-					alert('Failed to load pending posts. Please try again.');
-					$btn.prop('disabled', false).text('Generate All');
-				}
-			});
 		});
 	});
 

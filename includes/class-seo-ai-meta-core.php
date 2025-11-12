@@ -451,6 +451,13 @@ class SEO_AI_Meta_Core {
 		add_action( 'wp_ajax_seo_ai_meta_logout', array( $this, 'ajax_logout' ) );
 		add_action( 'wp_ajax_seo_ai_meta_forgot_password', array( $this, 'ajax_forgot_password' ) );
 		add_action( 'wp_ajax_seo_ai_meta_reset_password', array( $this, 'ajax_reset_password' ) );
+
+		// Site-wide licensing AJAX handlers
+		add_action( 'wp_ajax_seo_ai_meta_register_site', array( $this, 'ajax_register_site' ) );
+		add_action( 'wp_ajax_seo_ai_meta_verify_site_key', array( $this, 'ajax_verify_site_key' ) );
+		add_action( 'wp_ajax_seo_ai_meta_get_site_usage', array( $this, 'ajax_get_site_usage' ) );
+		add_action( 'wp_ajax_seo_ai_meta_get_site_billing', array( $this, 'ajax_get_site_billing' ) );
+		add_action( 'wp_ajax_seo_ai_meta_regenerate_site_key', array( $this, 'ajax_regenerate_site_key' ) );
 	}
 
 	/**
@@ -668,6 +675,176 @@ class SEO_AI_Meta_Core {
 		}
 
 		wp_send_json_success( array( 'message' => __( 'Password reset successfully. You can now login with your new password.', 'seo-ai-meta-generator' ) ) );
+	}
+
+	/**
+	 * AJAX: Register new site for site-wide licensing
+	 */
+	public function ajax_register_site() {
+		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
+
+		// Only admins can register sites
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied. Only administrators can register sites.', 'seo-ai-meta-generator' ) ) );
+		}
+
+		$site_url = isset( $_POST['site_url'] ) ? esc_url_raw( $_POST['site_url'] ) : get_site_url();
+		$site_name = isset( $_POST['site_name'] ) ? sanitize_text_field( $_POST['site_name'] ) : get_bloginfo( 'name' );
+		$admin_email = isset( $_POST['admin_email'] ) ? sanitize_email( $_POST['admin_email'] ) : get_option( 'admin_email' );
+		$admin_name = isset( $_POST['admin_name'] ) ? sanitize_text_field( $_POST['admin_name'] ) : wp_get_current_user()->display_name;
+
+		if ( empty( $site_url ) || empty( $site_name ) || empty( $admin_email ) ) {
+			wp_send_json_error( array( 'message' => __( 'Site URL, name, and admin email are required.', 'seo-ai-meta-generator' ) ) );
+		}
+
+		$result = $this->api_client->register_site( $site_url, $site_name, $admin_email, $admin_name );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		// Store the API key
+		if ( isset( $result['api_key'] ) ) {
+			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+			SEO_AI_Meta_Site_License::set_site_api_key( $result['api_key'] );
+
+			// Auto-switch to site-wide mode
+			SEO_AI_Meta_Site_License::set_license_mode( 'site-wide' );
+		}
+
+		wp_send_json_success( array(
+			'message' => __( 'Site registered successfully!', 'seo-ai-meta-generator' ),
+			'api_key' => $result['api_key'] ?? '',
+			'site_id' => $result['site_id'] ?? '',
+		) );
+	}
+
+	/**
+	 * AJAX: Verify site API key
+	 */
+	public function ajax_verify_site_key() {
+		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'seo-ai-meta-generator' ) ) );
+		}
+
+		$api_key = isset( $_POST['api_key'] ) ? sanitize_text_field( $_POST['api_key'] ) : '';
+
+		if ( empty( $api_key ) ) {
+			// Check stored key
+			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+			$api_key = SEO_AI_Meta_Site_License::get_site_api_key();
+		}
+
+		if ( empty( $api_key ) ) {
+			wp_send_json_error( array( 'message' => __( 'No API key provided.', 'seo-ai-meta-generator' ) ) );
+		}
+
+		// Temporarily set the key to verify it
+		$original_key = SEO_AI_Meta_Site_License::get_site_api_key();
+		SEO_AI_Meta_Site_License::set_site_api_key( $api_key );
+
+		$result = $this->api_client->verify_site_key();
+
+		// Restore original key if verification failed
+		if ( is_wp_error( $result ) ) {
+			if ( $original_key ) {
+				SEO_AI_Meta_Site_License::set_site_api_key( $original_key );
+			} else {
+				SEO_AI_Meta_Site_License::clear_site_api_key();
+			}
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( array(
+			'message' => __( 'API key verified successfully!', 'seo-ai-meta-generator' ),
+			'valid' => true,
+			'site_data' => $result,
+		) );
+	}
+
+	/**
+	 * AJAX: Get site-wide usage statistics
+	 */
+	public function ajax_get_site_usage() {
+		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_seo_ai_meta' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'seo-ai-meta-generator' ) ) );
+		}
+
+		// Check if in site-wide mode
+		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+		if ( ! SEO_AI_Meta_Site_License::is_site_wide_mode() ) {
+			wp_send_json_error( array( 'message' => __( 'Site is not in site-wide mode.', 'seo-ai-meta-generator' ) ) );
+		}
+
+		$result = $this->api_client->get_site_usage();
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( $result );
+	}
+
+	/**
+	 * AJAX: Get site billing information
+	 */
+	public function ajax_get_site_billing() {
+		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'seo-ai-meta-generator' ) ) );
+		}
+
+		// Check if in site-wide mode
+		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+		if ( ! SEO_AI_Meta_Site_License::is_site_wide_mode() ) {
+			wp_send_json_error( array( 'message' => __( 'Site is not in site-wide mode.', 'seo-ai-meta-generator' ) ) );
+		}
+
+		$result = $this->api_client->get_site_billing_info();
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( $result );
+	}
+
+	/**
+	 * AJAX: Regenerate site API key
+	 */
+	public function ajax_regenerate_site_key() {
+		check_ajax_referer( 'seo_ai_meta_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'seo-ai-meta-generator' ) ) );
+		}
+
+		// Check if in site-wide mode
+		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+		if ( ! SEO_AI_Meta_Site_License::is_site_wide_mode() ) {
+			wp_send_json_error( array( 'message' => __( 'Site is not in site-wide mode.', 'seo-ai-meta-generator' ) ) );
+		}
+
+		$result = $this->api_client->regenerate_site_key();
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		// Store the new API key
+		if ( isset( $result['api_key'] ) ) {
+			SEO_AI_Meta_Site_License::set_site_api_key( $result['api_key'] );
+		}
+
+		wp_send_json_success( array(
+			'message' => __( 'API key regenerated successfully!', 'seo-ai-meta-generator' ),
+			'api_key' => $result['api_key'] ?? '',
+		) );
 	}
 
 	/**

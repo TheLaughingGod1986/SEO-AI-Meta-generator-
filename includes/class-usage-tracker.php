@@ -73,6 +73,8 @@ class SEO_AI_Meta_Usage_Tracker {
 	/**
 	 * Get cached usage data
 	 *
+	 * Supports both per-user and site-wide licensing modes
+	 *
 	 * @param bool $force_refresh Force refresh from API.
 	 * @return array
 	 */
@@ -85,10 +87,17 @@ class SEO_AI_Meta_Usage_Tracker {
 
 		if ( $cached === false ) {
 			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-seo-ai-meta-database.php';
-			
+			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+
+			// Check if using site-wide licensing
+			if ( SEO_AI_Meta_Site_License::is_site_wide_mode() ) {
+				return self::get_site_wide_usage();
+			}
+
+			// Per-user mode (existing logic)
 			$user_id = get_current_user_id();
 			$user_data = SEO_AI_Meta_Database::get_user_data( $user_id );
-			
+
 			// Fallback to WordPress user meta for backward compatibility
 			if ( ! $user_data ) {
 				$plan      = get_user_meta( $user_id, 'seo_ai_meta_plan', true ) ?: 'free';
@@ -101,10 +110,10 @@ class SEO_AI_Meta_Usage_Tracker {
 				$reset_date_str = $user_data['reset_date'];
 				$reset_ts = $reset_date_str ? ( is_numeric( $reset_date_str ) ? intval( $reset_date_str ) : strtotime( $reset_date_str ) ) : strtotime( 'first day of next month' );
 			}
-			
+
 			$limit     = self::PLAN_LIMITS[ $plan ] ?? self::PLAN_LIMITS['free'];
 			$reset_date = date( 'Y-m-01', $reset_ts );
-			
+
 			return array(
 				'used'                => $used,
 				'limit'               => $limit,
@@ -117,6 +126,32 @@ class SEO_AI_Meta_Usage_Tracker {
 		}
 
 		return $cached;
+	}
+
+	/**
+	 * Get site-wide usage data
+	 *
+	 * @return array
+	 */
+	private static function get_site_wide_usage() {
+		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+
+		$site_usage = SEO_AI_Meta_Site_License::get_site_usage();
+		$limit = SEO_AI_Meta_Site_License::get_site_usage_limit();
+		$plan = SEO_AI_Meta_Site_License::get_site_plan();
+		$used = isset( $site_usage['count'] ) ? intval( $site_usage['count'] ) : 0;
+		$reset_date = isset( $site_usage['reset_date'] ) ? $site_usage['reset_date'] : date( 'Y-m-01', strtotime( 'first day of next month' ) );
+		$reset_ts = strtotime( $reset_date );
+
+		return array(
+			'used'                => $used,
+			'limit'               => $limit,
+			'remaining'           => max( 0, $limit - $used ),
+			'plan'                => $plan,
+			'resetDate'           => $reset_date,
+			'reset_timestamp'     => $reset_ts,
+			'seconds_until_reset' => max( 0, $reset_ts - current_time( 'timestamp' ) ),
+		);
 	}
 
 	/**
@@ -180,7 +215,11 @@ class SEO_AI_Meta_Usage_Tracker {
 	/**
 	 * Increment usage count
 	 *
+	 * Supports both per-user and site-wide licensing modes
+	 *
 	 * @param int $user_id User ID.
+	 * @param int $post_id Post ID.
+	 * @param string $model Model used.
 	 */
 	public static function increment_usage( $user_id = null, $post_id = null, $model = null ) {
 		if ( ! $user_id ) {
@@ -188,31 +227,42 @@ class SEO_AI_Meta_Usage_Tracker {
 		}
 
 		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-seo-ai-meta-database.php';
+		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
 
-		// Check if reset is needed
-		self::maybe_reset_usage( $user_id );
+		// Check if using site-wide licensing
+		if ( SEO_AI_Meta_Site_License::is_site_wide_mode() ) {
+			// Increment site-wide usage
+			SEO_AI_Meta_Site_License::increment_site_usage( $post_id );
 
-		// Get current usage from custom database
-		$user_data = SEO_AI_Meta_Database::get_user_data( $user_id );
-		$current_count = $user_data ? intval( $user_data['usage_count'] ) : 0;
-		
-		// Fallback to WordPress user meta for backward compatibility
-		if ( $current_count === 0 ) {
-			$current_count = intval( get_user_meta( $user_id, 'seo_ai_meta_usage_count', true ) ) ?: 0;
+			// Still log which WP user generated it (for accountability/analytics)
+			SEO_AI_Meta_Database::log_usage( $user_id, $post_id, 'generate', $model );
+		} else {
+			// Per-user mode (existing logic)
+			// Check if reset is needed
+			self::maybe_reset_usage( $user_id );
+
+			// Get current usage from custom database
+			$user_data = SEO_AI_Meta_Database::get_user_data( $user_id );
+			$current_count = $user_data ? intval( $user_data['usage_count'] ) : 0;
+
+			// Fallback to WordPress user meta for backward compatibility
+			if ( $current_count === 0 ) {
+				$current_count = intval( get_user_meta( $user_id, 'seo_ai_meta_usage_count', true ) ) ?: 0;
+			}
+
+			$new_count = $current_count + 1;
+
+			// Update custom database
+			$data = $user_data ? $user_data : array();
+			$data['usage_count'] = $new_count;
+			SEO_AI_Meta_Database::update_user_data( $user_id, $data );
+
+			// Also update WordPress user meta for backward compatibility
+			update_user_meta( $user_id, 'seo_ai_meta_usage_count', $new_count );
+
+			// Log usage
+			SEO_AI_Meta_Database::log_usage( $user_id, $post_id, 'generate', $model );
 		}
-
-		$new_count = $current_count + 1;
-
-		// Update custom database
-		$data = $user_data ? $user_data : array();
-		$data['usage_count'] = $new_count;
-		SEO_AI_Meta_Database::update_user_data( $user_id, $data );
-
-		// Also update WordPress user meta for backward compatibility
-		update_user_meta( $user_id, 'seo_ai_meta_usage_count', $new_count );
-
-		// Log usage
-		SEO_AI_Meta_Database::log_usage( $user_id, $post_id, 'generate', $model );
 
 		// Clear cache
 		delete_transient( self::CACHE_KEY );

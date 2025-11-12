@@ -13,7 +13,6 @@ class SEO_AI_Meta_Bulk {
 	public function __construct() {
 		add_action( 'wp_ajax_seo_ai_meta_bulk_generate', array( $this, 'ajax_bulk_generate' ) );
 		add_action( 'wp_ajax_seo_ai_meta_bulk_optimize', array( $this, 'ajax_bulk_optimize' ) );
-		add_action( 'wp_ajax_seo_ai_meta_get_all_pending_posts', array( $this, 'ajax_get_all_pending_posts' ) );
 	}
 
 	/**
@@ -161,56 +160,5 @@ class SEO_AI_Meta_Bulk {
 			'results'       => $results,
 			'error_details' => $errors,
 		);
-	}
-
-	/**
-	 * AJAX handler to get all post IDs without meta tags
-	 */
-	public function ajax_get_all_pending_posts() {
-		check_ajax_referer( 'seo_ai_meta_bulk_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_seo_ai_meta' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'seo-ai-meta-generator' ) ) );
-		}
-
-		$args = array(
-			'post_type'      => 'post',
-			'post_status'    => 'publish',
-			'posts_per_page' => -1,
-			'fields'         => 'ids',
-			'meta_query'     => array(
-				'relation' => 'OR',
-				array(
-					'key'     => '_seo_ai_meta_title',
-					'compare' => 'NOT EXISTS',
-				),
-				array(
-					'key'     => '_seo_ai_meta_title',
-					'value'   => '',
-					'compare' => '=',
-				),
-			),
-		);
-
-		$query = new WP_Query( $args );
-		$post_ids = $query->posts;
-
-		// Get post titles for display
-		$posts_data = array();
-		foreach ( $post_ids as $post_id ) {
-			$post = get_post( $post_id );
-			if ( $post ) {
-				$posts_data[] = array(
-					'id'    => $post_id,
-					'title' => $post->post_title,
-				);
-			}
-		}
-
-		wp_send_json_success( array(
-			'post_ids'  => $post_ids,
-			'posts'     => $posts_data,
-			'total'     => count( $post_ids ),
-		) );
 	}
 }

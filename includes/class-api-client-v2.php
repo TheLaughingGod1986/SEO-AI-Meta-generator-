@@ -286,9 +286,18 @@ class SEO_AI_Meta_API_Client_V2 {
 	/**
 	 * Check if user is authenticated
 	 *
+	 * Supports both per-user JWT and site-wide API key authentication
+	 *
 	 * @return bool
 	 */
 	public function is_authenticated() {
+		// Check if using site-wide licensing
+		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+		if ( SEO_AI_Meta_Site_License::is_site_wide_mode() ) {
+			return SEO_AI_Meta_Site_License::is_site_authenticated();
+		}
+
+		// Per-user JWT authentication
 		$token = $this->get_token();
 		if ( empty( $token ) ) {
 			return false;
@@ -318,14 +327,27 @@ class SEO_AI_Meta_API_Client_V2 {
 	/**
 	 * Get authentication headers
 	 *
+	 * Supports both per-user JWT and site-wide API key authentication
+	 *
 	 * @return array
 	 */
 	private function get_auth_headers() {
-		$token   = $this->get_token();
 		$headers = array(
 			'Content-Type' => 'application/json',
 		);
 
+		// Check if using site-wide licensing
+		require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+		if ( SEO_AI_Meta_Site_License::is_site_wide_mode() ) {
+			$api_key = SEO_AI_Meta_Site_License::get_site_api_key();
+			if ( $api_key ) {
+				$headers['Authorization'] = 'Api-Key ' . $api_key;
+				return $headers;
+			}
+		}
+
+		// Fall back to per-user JWT authentication
+		$token = $this->get_token();
 		if ( $token ) {
 			$headers['Authorization'] = 'Bearer ' . $token;
 		}
@@ -791,5 +813,256 @@ class SEO_AI_Meta_API_Client_V2 {
 		}
 
 		return new WP_Error( 'portal_failed', $response['data']['error'] ?? __( 'Failed to create customer portal session', 'seo-ai-meta-generator' ) );
+	}
+
+	/**
+	 * ========================================
+	 * SITE-WIDE LICENSING API METHODS
+	 * ========================================
+	 */
+
+	/**
+	 * Register a new site (site-wide licensing)
+	 *
+	 * @param string $site_url    Site URL.
+	 * @param string $site_name   Site name.
+	 * @param string $admin_email Admin email.
+	 * @param string $admin_name  Admin name.
+	 * @return array|WP_Error
+	 */
+	public function register_site( $site_url, $site_name, $admin_email, $admin_name ) {
+		$response = $this->make_request( '/auth/site/register', 'POST', array(
+			'site_url'    => $site_url,
+			'site_name'   => $site_name,
+			'admin_email' => $admin_email,
+			'admin_name'  => $admin_name,
+			'service'     => 'seo-ai-meta',
+		) );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		if ( $response['success'] ) {
+			// Store site data locally
+			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+			$site_data = $response['data'];
+
+			// Save API key
+			if ( isset( $site_data['api_key'] ) ) {
+				SEO_AI_Meta_Site_License::set_site_api_key( $site_data['api_key'] );
+			}
+
+			// Save site data
+			SEO_AI_Meta_Site_License::update_site_data( array(
+				'plan'        => $site_data['plan'] ?? 'free',
+				'usage_limit' => $site_data['usage_limit'] ?? 10,
+				'usage_count' => $site_data['usage_count'] ?? 0,
+				'reset_date'  => $site_data['reset_date'] ?? null,
+			) );
+
+			return $site_data;
+		}
+
+		return new WP_Error( 'site_registration_failed', $response['data']['error'] ?? __( 'Failed to register site', 'seo-ai-meta-generator' ) );
+	}
+
+	/**
+	 * Verify site API key
+	 *
+	 * @return array|WP_Error
+	 */
+	public function verify_site_key() {
+		$response = $this->make_request( '/auth/site/verify' );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		if ( $response['success'] ) {
+			return $response['data'];
+		}
+
+		return new WP_Error( 'site_verification_failed', $response['data']['error'] ?? __( 'Failed to verify site API key', 'seo-ai-meta-generator' ) );
+	}
+
+	/**
+	 * Get site usage information
+	 *
+	 * @return array|WP_Error
+	 */
+	public function get_site_usage() {
+		$response = $this->make_request( '/usage/site?service=seo-ai-meta' );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		if ( $response['success'] ) {
+			// Update local site usage data
+			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+			$usage_data = $response['data'];
+
+			SEO_AI_Meta_Site_License::update_site_usage( array(
+				'count'      => $usage_data['usage_count'] ?? 0,
+				'reset_date' => $usage_data['reset_date'] ?? null,
+				'last_used'  => current_time( 'mysql' ),
+			) );
+
+			return $usage_data;
+		}
+
+		return new WP_Error( 'site_usage_failed', $response['data']['error'] ?? __( 'Failed to get site usage', 'seo-ai-meta-generator' ) );
+	}
+
+	/**
+	 * Get site billing information
+	 *
+	 * @return array|WP_Error
+	 */
+	public function get_site_billing_info() {
+		$response = $this->make_request( '/billing/site/info?service=seo-ai-meta' );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		if ( $response['success'] ) {
+			// Update local site data
+			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+			$billing_data = $response['data'];
+
+			SEO_AI_Meta_Site_License::update_site_data( array(
+				'plan'        => $billing_data['plan'] ?? 'free',
+				'usage_limit' => $billing_data['usage_limit'] ?? 10,
+			) );
+
+			return $billing_data;
+		}
+
+		return new WP_Error( 'site_billing_failed', $response['data']['error'] ?? __( 'Failed to get site billing info', 'seo-ai-meta-generator' ) );
+	}
+
+	/**
+	 * Get available plans for site-wide licensing
+	 *
+	 * @return array|WP_Error
+	 */
+	public function get_site_plans() {
+		$response = $this->make_request( '/billing/site/plans?service=seo-ai-meta' );
+
+		if ( is_wp_error( $response ) ) {
+			// Don't return error if server is temporarily unavailable - return empty array instead
+			if ( $response->get_error_code() === 'server_error' ) {
+				return array();
+			}
+			return $response;
+		}
+
+		if ( $response['success'] ) {
+			return $response['data']['plans'] ?? array();
+		}
+
+		// If request failed but wasn't an error, return empty array to allow fallback
+		return array();
+	}
+
+	/**
+	 * Create checkout session for site upgrade
+	 *
+	 * @param string $plan        Plan ID (e.g., 'site_pro').
+	 * @param string $success_url Success URL.
+	 * @param string $cancel_url  Cancel URL.
+	 * @return array|WP_Error
+	 */
+	public function create_site_checkout_session( $plan, $success_url, $cancel_url ) {
+		$response = $this->make_request( '/billing/site/checkout', 'POST', array(
+			'plan'        => $plan,
+			'service'     => 'seo-ai-meta',
+			'success_url' => $success_url,
+			'cancel_url'  => $cancel_url,
+		) );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		if ( $response['success'] ) {
+			return $response['data'];
+		}
+
+		return new WP_Error( 'site_checkout_failed', $response['data']['error'] ?? __( 'Failed to create site checkout session', 'seo-ai-meta-generator' ) );
+	}
+
+	/**
+	 * Create customer portal session for site billing management
+	 *
+	 * @param string $return_url Return URL.
+	 * @return array|WP_Error
+	 */
+	public function create_site_portal_session( $return_url ) {
+		$response = $this->make_request( '/billing/site/portal', 'POST', array(
+			'return_url' => $return_url,
+			'service'    => 'seo-ai-meta',
+		) );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		if ( $response['success'] ) {
+			return $response['data'];
+		}
+
+		return new WP_Error( 'site_portal_failed', $response['data']['error'] ?? __( 'Failed to create site portal session', 'seo-ai-meta-generator' ) );
+	}
+
+	/**
+	 * Update site information
+	 *
+	 * @param array $data Site data to update.
+	 * @return array|WP_Error
+	 */
+	public function update_site_info( $data ) {
+		$response = $this->make_request( '/auth/site/update', 'PUT', $data );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		if ( $response['success'] ) {
+			return $response['data'];
+		}
+
+		return new WP_Error( 'site_update_failed', $response['data']['error'] ?? __( 'Failed to update site info', 'seo-ai-meta-generator' ) );
+	}
+
+	/**
+	 * Regenerate site API key
+	 *
+	 * @return array|WP_Error
+	 */
+	public function regenerate_site_key() {
+		$response = $this->make_request( '/auth/site/regenerate-key', 'POST', array(
+			'confirm' => true,
+		) );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		if ( $response['success'] ) {
+			// Update local API key
+			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+			$new_key = $response['data']['api_key'] ?? null;
+
+			if ( $new_key ) {
+				SEO_AI_Meta_Site_License::set_site_api_key( $new_key );
+			}
+
+			return $response['data'];
+		}
+
+		return new WP_Error( 'site_key_regeneration_failed', $response['data']['error'] ?? __( 'Failed to regenerate API key', 'seo-ai-meta-generator' ) );
 	}
 }

@@ -92,4 +92,3 @@ class SEO_AI_Meta_Loader {
 		}
 	}
 }
-

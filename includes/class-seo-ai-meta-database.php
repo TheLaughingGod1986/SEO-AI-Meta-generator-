@@ -165,6 +165,25 @@ class SEO_AI_Meta_Database {
 	}
 
 	/**
+	 * Delete setting
+	 *
+	 * @param string $key Setting key.
+	 * @return bool
+	 */
+	public static function delete_setting( $key ) {
+		global $wpdb;
+		$table = self::get_table_name( 'settings' );
+
+		$result = $wpdb->delete(
+			$table,
+			array( 'setting_key' => $key ),
+			array( '%s' )
+		);
+
+		return $result !== false;
+	}
+
+	/**
 	 * Get post meta
 	 *
 	 * @param int    $post_id Post ID.
@@ -315,15 +334,21 @@ class SEO_AI_Meta_Database {
 	/**
 	 * Log usage
 	 *
-	 * @param int    $user_id User ID.
+	 * @param int    $user_id User ID (0 for site-wide).
 	 * @param int    $post_id Post ID.
 	 * @param string $action Action type.
-	 * @param string $model Model used.
+	 * @param mixed  $model Model used (can be string or array with metadata).
 	 * @return bool
 	 */
 	public static function log_usage( $user_id, $post_id = null, $action = 'generate', $model = null ) {
 		global $wpdb;
 		$table = self::get_table_name( 'usage_log' );
+
+		// Handle metadata if model is an array
+		$model_name = $model;
+		if ( is_array( $model ) ) {
+			$model_name = isset( $model['model'] ) ? $model['model'] : null;
+		}
 
 		return $wpdb->insert(
 			$table,
@@ -331,7 +356,7 @@ class SEO_AI_Meta_Database {
 				'user_id' => $user_id,
 				'post_id' => $post_id,
 				'action'  => $action,
-				'model'   => $model,
+				'model'   => $model_name,
 			),
 			array( '%d', '%d', '%s', '%s' )
 		) !== false;

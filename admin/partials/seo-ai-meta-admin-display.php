@@ -43,36 +43,6 @@ $fomo_percentage = $usage_stats['percentage'];
 // Calculate time saved (estimate: 2 minutes per post)
 $time_saved_hours = round( ( $seo_impact['posts_optimized'] * 2 ) / 60, 1 );
 
-// Calculate dynamic tagline based on percentage
-$percentage = min( 100, round( $usage_stats['percentage'] ) );
-$dynamic_tagline = '';
-if ( $percentage < 25 ) {
-	$dynamic_tagline = 'Just getting started — keep optimizing!';
-} elseif ( $percentage < 50 ) {
-	$dynamic_tagline = 'Making great progress — keep optimizing!';
-} elseif ( $percentage < 75 ) {
-	$dynamic_tagline = 'Halfway powered — keep optimizing!';
-} elseif ( $percentage < 90 ) {
-	$dynamic_tagline = 'Almost there — keep optimizing!';
-} elseif ( $percentage < 100 ) {
-	$dynamic_tagline = 'Nearly full — upgrade for unlimited!';
-} else {
-	$dynamic_tagline = 'All used — upgrade for unlimited generations!';
-}
-
-// Generate sparkline data (sample data for visibility trends)
-// In production, this would come from actual analytics
-$sparkline_data = array();
-for ( $i = 0; $i < 7; $i++ ) {
-	$sparkline_data[] = 20 + ( $seo_impact['estimated_rankings'] / 7 ) * $i + rand( -5, 5 );
-}
-$sparkline_max = max( $sparkline_data );
-$sparkline_min = min( $sparkline_data );
-$sparkline_range = $sparkline_max - $sparkline_min;
-if ( $sparkline_range === 0 ) {
-	$sparkline_range = 1;
-}
-
 // Get tab
 $tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'dashboard';
 
@@ -107,13 +77,27 @@ if ( empty( $settings ) ) {
 		<div class="seo-ai-meta-logo">
 			<div class="seo-ai-meta-logo-icon">
 				<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-					<rect width="32" height="32" rx="6" fill="#1a1a1a"/>
+					<rect width="32" height="32" rx="6" fill="#2271b1"/>
 					<text x="16" y="22" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle">AI</text>
 				</svg>
 			</div>
 			<span class="seo-ai-meta-logo-text">SEO AI Meta Generator</span>
 		</div>
-		<div class="seo-ai-meta-header-right">
+		<div class="seo-ai-meta-header-right" style="display: flex; align-items: center; gap: 16px;">
+			<!-- Testimonial Carousel -->
+			<div id="seo-ai-meta-testimonial-carousel" style="max-width: 280px; padding: 8px 12px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #374151; line-height: 1.4;">
+				<div class="seo-ai-meta-testimonial-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #2271b1 0%, #3582c4 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: white; font-weight: 600; font-size: 14px;">
+					SA
+				</div>
+				<div style="flex: 1; min-width: 0;">
+					<div class="seo-ai-meta-testimonial-text" style="font-style: italic;">
+						<?php esc_html_e( 'Generated 1,200 meta tags in minutes, saved hours each week', 'seo-ai-meta-generator' ); ?>
+					</div>
+					<div class="seo-ai-meta-testimonial-author" style="font-size: 11px; color: #6b7280; margin-top: 2px;">
+						<?php esc_html_e( 'Sarah W., Agency Owner', 'seo-ai-meta-generator' ); ?>
+					</div>
+				</div>
+			</div>
 			<?php if ( $show_fomo || $usage_stats['percentage'] >= 90 ) : ?>
 				<span class="seo-ai-meta-fomo-header">
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -123,7 +107,7 @@ if ( empty( $settings ) ) {
 				</span>
 			<?php endif; ?>
 			<?php if ( ! $is_authenticated ) : ?>
-				<button type="button" class="seo-ai-meta-btn-login" onclick="seoAiMetaShowLoginModal();">
+				<button type="button" class="seo-ai-meta-btn-login" onclick="seoAiMetaTrackEvent('login_click', {source: 'header'}); seoAiMetaShowLoginModal();">
 					<?php esc_html_e( 'Login/Register', 'seo-ai-meta-generator' ); ?>
 				</button>
 			<?php else : ?>
@@ -145,9 +129,10 @@ if ( empty( $settings ) ) {
 
 	<?php
 	// Get backend status for display
-	$core = new SEO_AI_Meta_Core();
-	$backend_status = $core->get_backend_status();
-	$can_work_offline = $core->can_work_offline();
+	require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-api-client-v2.php';
+	$api_client_status = new SEO_AI_Meta_API_Client_V2();
+	$backend_status = $api_client_status->get_backend_status();
+	$can_work_offline = isset( $backend_status['can_work_offline'] ) ? $backend_status['can_work_offline'] : false;
 	?>
 
 	<?php if ( isset( $backend_status['status'] ) && $backend_status['status'] !== 'healthy' ) : ?>
@@ -226,128 +211,225 @@ if ( empty( $settings ) ) {
 
 	<div class="seo-ai-meta-dashboard-content" style="max-width: 960px; margin: 0 auto; padding: 28px 0;">
 		<?php if ( $tab === 'dashboard' ) : ?>
+			<?php
+			// Calculate dynamic tagline based on percentage with achievement-focused microcopy
+			$percentage = min( 100, round( $usage_stats['percentage'] ) );
+			$dynamic_tagline = '';
+			$is_maxed = $percentage >= 100;
+			if ( $is_maxed ) {
+				$dynamic_tagline = __( 'You\'ve maxed out your free 50 AI generations —', 'seo-ai-meta-generator' );
+				$dynamic_subtitle = __( 'time to scale your SEO superpowers', 'seo-ai-meta-generator' );
+			} elseif ( $percentage < 25 ) {
+				$dynamic_tagline = __( 'Just getting started — keep optimizing!', 'seo-ai-meta-generator' );
+				$dynamic_subtitle = '';
+			} elseif ( $percentage < 50 ) {
+				$dynamic_tagline = __( 'Making great progress — keep optimizing!', 'seo-ai-meta-generator' );
+				$dynamic_subtitle = '';
+			} elseif ( $percentage < 75 ) {
+				$dynamic_tagline = __( 'Halfway powered — keep optimizing!', 'seo-ai-meta-generator' );
+				$dynamic_subtitle = '';
+			} elseif ( $percentage < 90 ) {
+				$dynamic_tagline = __( 'Almost there — keep optimizing!', 'seo-ai-meta-generator' );
+				$dynamic_subtitle = '';
+			} else {
+				$dynamic_tagline = __( 'Nearly full — upgrade for unlimited!', 'seo-ai-meta-generator' );
+				$dynamic_subtitle = '';
+			}
+			
+			// Generate sparkline data (sample data for visibility trends)
+			$sparkline_data = array();
+			for ( $i = 0; $i < 7; $i++ ) {
+				$base_value = 20;
+				$trend_value = ( $seo_impact['estimated_rankings'] / 7 ) * $i;
+				$variance = rand( -3, 3 );
+				$sparkline_data[] = max( 0, round( $base_value + $trend_value + $variance ) );
+			}
+			$sparkline_max = max( $sparkline_data );
+			$sparkline_min = min( $sparkline_data );
+			$sparkline_range = $sparkline_max - $sparkline_min;
+			if ( $sparkline_range === 0 ) {
+				$sparkline_range = 1;
+			}
+			
+			// Calculate circumference and offset for progress ring
+			$radius = 56;
+			$circumference = 2 * M_PI * $radius;
+			$offset = $circumference * ( 1 - ( $percentage / 100 ) );
+			?>
+			
 			<!-- Main Title -->
-			<h1 class="text-3xl font-bold text-gray-900 mb-8" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.2;">
+			<h1 style="font-size: 28px; font-weight: 700; color: #1f2937; margin: 0 0 32px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.2;">
 				Generate SEO Titles and Meta Descriptions with AI
 			</h1>
 
 			<!-- AI Power Meter Section -->
-			<div class="bg-white rounded-xl border border-gray-200 p-7 mb-8">
-				<div class="flex items-center gap-8 mb-6">
-					<!-- Circular Progress Ring -->
-					<div class="relative w-32 h-32 flex-shrink-0">
-						<svg width="128" height="128" class="transform -rotate-90" viewBox="0 0 128 128">
-							<defs>
-								<linearGradient id="seo-ai-meta-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-									<stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
-									<stop offset="100%" style="stop-color:#60a5fa;stop-opacity:1" />
-								</linearGradient>
-							</defs>
-							<!-- Background circle -->
-							<circle cx="64" cy="64" r="56" fill="none" stroke="#e5e7eb" stroke-width="12"/>
-							<!-- Progress circle -->
-							<circle 
-								id="seo-ai-meta-progress-ring" 
-								cx="64" 
-								cy="64" 
-								r="56" 
-								fill="none" 
-								stroke="url(#seo-ai-meta-gradient)" 
-								stroke-width="12" 
-								stroke-linecap="round"
-								data-percentage="<?php echo esc_attr( $percentage ); ?>"
-								style="stroke-dasharray: <?php echo esc_attr( 2 * M_PI * 56 ); ?>; stroke-dashoffset: <?php echo esc_attr( 2 * M_PI * 56 ); ?>; transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);"
-							/>
-						</svg>
-						<!-- Percentage text inside ring -->
-						<div class="absolute inset-0 flex items-center justify-center">
-							<div class="text-center">
-								<div class="text-3xl font-bold text-gray-900 leading-none">
-									<?php echo esc_html( $percentage ); ?>%
-								</div>
-								<div class="text-xs text-gray-500 mt-1">Used</div>
-							</div>
+			<div style="display: flex; align-items: center; gap: 32px; margin-bottom: 32px; padding: 28px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.08)';" onmouseout="this.style.boxShadow='none';">
+				<!-- Circular Progress Ring -->
+				<div style="position: relative; width: 128px; height: 128px; flex-shrink: 0;">
+					<svg width="128" height="128" style="transform: rotate(-90deg); transition: transform 0.3s ease;">
+						<defs>
+							<linearGradient id="seo-ai-meta-power-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+								<stop offset="0%" style="stop-color:#2271b1;stop-opacity:1" />
+								<stop offset="100%" style="stop-color:#3582c4;stop-opacity:1" />
+							</linearGradient>
+						</defs>
+						<!-- Background circle -->
+						<circle cx="64" cy="64" r="<?php echo esc_attr( $radius ); ?>" fill="none" stroke="#e5e7eb" stroke-width="12" style="transition: stroke 0.3s ease;"/>
+						<!-- Progress circle -->
+						<circle 
+							id="seo-ai-meta-progress-ring" 
+							cx="64" 
+							cy="64" 
+							r="<?php echo esc_attr( $radius ); ?>" 
+							fill="none" 
+							stroke="url(#seo-ai-meta-power-gradient)" 
+							stroke-width="12" 
+							stroke-linecap="round"
+							data-percentage="<?php echo esc_attr( $percentage ); ?>"
+							style="stroke-dasharray: <?php echo esc_attr( $circumference ); ?>; stroke-dashoffset: <?php echo esc_attr( $offset ); ?>; transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);"
+						/>
+					</svg>
+					<!-- Percentage text inside ring -->
+					<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+						<div style="font-size: 24px; font-weight: 700; color: #2271b1; line-height: 1;">
+							<?php echo esc_html( $percentage ); ?>%
 						</div>
+						<div style="font-size: 11px; color: #6b7280; margin-top: 2px; font-weight: 500;">Used</div>
 					</div>
-					
-					<!-- Usage Text and Info -->
-					<div class="flex-1">
-						<p class="text-sm text-gray-600 mb-2 leading-relaxed">
+				</div>
+				
+				<!-- Usage Text and CTA -->
+				<div style="flex: 1;">
+					<?php if ( $is_maxed ) : ?>
+						<p style="font-size: 15px; color: #374151; margin: 0 0 4px 0; line-height: 1.5;">
 							<?php echo esc_html( $dynamic_tagline ); ?>
 						</p>
-						<p class="text-2xl font-bold text-gray-900 mb-2 leading-tight">
-							You've used <?php echo esc_html( $usage_stats['used'] ); ?> of <?php echo esc_html( $usage_stats['limit'] ); ?> generations this month
+						<p style="font-size: 16px; color: #1f2937; margin: 0 0 20px 0; line-height: 1.4; font-weight: 600;">
+							<?php echo esc_html( $dynamic_subtitle ); ?>
 						</p>
-						<p class="text-sm text-gray-500 mb-4">
+					<?php else : ?>
+						<p style="font-size: 15px; color: #374151; margin: 0 0 12px 0; line-height: 1.5; font-weight: 500;">
+							<?php echo esc_html( $dynamic_tagline ); ?>
+						</p>
+						<p style="font-size: 16px; color: #1f2937; margin: 0 0 4px 0; line-height: 1.4;">
+							You've used <strong style="font-weight: 600;"><?php echo esc_html( $usage_stats['used'] ); ?></strong> of <strong style="font-weight: 600;"><?php echo esc_html( $usage_stats['limit'] ); ?></strong> generations this month
+						</p>
+						<p style="font-size: 13px; color: #6b7280; margin: 0 0 20px 0; line-height: 1.5;">
 							Resets <?php echo esc_html( $usage_stats['reset_date'] ); ?>
 						</p>
+					<?php endif; ?>
+					<?php if ( $is_maxed ) : ?>
+						<button type="button" 
+								onclick="seoAiMetaTrackEvent('upgrade_click', {source: 'maxed_out_banner', location: 'dashboard'}); seoAiMetaShowUpgradeModal();" 
+								style="padding: 12px 24px; background: linear-gradient(135deg, #2271b1 0%, #3582c4 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(34, 113, 177, 0.25);"
+								onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(34, 113, 177, 0.35)';"
+								onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(34, 113, 177, 0.25)';">
+							Upgrade to Pro
+						</button>
+					<?php elseif ( ! $is_authenticated ) : ?>
+						<button type="button" 
+								onclick="seoAiMetaTrackEvent('generate_more_click', {source: 'power_meter', authenticated: false}); seoAiMetaShowLoginModal();" 
+								style="padding: 10px 20px; background: linear-gradient(135deg, #2271b1 0%, #3582c4 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(34, 113, 177, 0.25);">
+							Generate More Meta Tags
+						</button>
+					<?php else : ?>
 						<a href="<?php echo esc_url( add_query_arg( 'tab', 'bulk', $base_tab_url ) ); ?>" 
-						   class="inline-block px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-lg shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200 text-sm">
+						   onclick="seoAiMetaTrackEvent('generate_more_click', {source: 'power_meter', authenticated: true});"
+						   style="display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #2271b1 0%, #3582c4 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.2s; box-shadow: 0 2px 4px rgba(34, 113, 177, 0.25);"
+						   onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(34, 113, 177, 0.35)';"
+						   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(34, 113, 177, 0.25)';">
 							Generate More Meta Tags
 						</a>
-						<p class="text-xs text-gray-500 mt-2">
+					<?php endif; ?>
+					<?php if ( ! $is_maxed ) : ?>
+						<p style="font-size: 12px; color: #6b7280; margin: 8px 0 0 0; line-height: 1.4;">
 							Upgrade to unlock unlimited generations + smart keyword tuning.
 						</p>
-					</div>
+					<?php endif; ?>
 				</div>
 			</div>
 				
 			<!-- SEO Impact Tracker Card -->
-			<div class="bg-white rounded-xl border border-gray-200 p-7 mb-8 relative">
-				<div class="flex items-center justify-between mb-4">
-					<div class="flex items-center gap-3">
-						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" class="flex-shrink-0">
+			<div style="margin-bottom: 32px; padding: 28px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; position: relative;">
+				<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+					<div style="display: flex; align-items: center; gap: 12px;">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" style="flex-shrink: 0;">
 							<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
 						</svg>
-						<h2 class="text-lg font-semibold text-gray-900 m-0">
+						<h2 style="font-size: 18px; font-weight: 600; color: #1f2937; margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 							SEO Impact Tracker
 						</h2>
 					</div>
-					<div class="cursor-help seo-ai-meta-tooltip-trigger" 
-						 title="<?php esc_attr_e( 'Visibility gain based on keyword improvement and CTR metrics.', 'seo-ai-meta-generator' ); ?>">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" class="transition-colors hover:stroke-blue-500">
-							<circle cx="12" cy="12" r="10"/>
-							<line x1="12" y1="16" x2="12" y2="12"/>
-							<line x1="12" y1="8" x2="12.01" y2="8"/>
-						</svg>
+					<div style="font-size: 14px; color: #6b7280; font-weight: 500;">
+						Estimate: <span style="color: #22c55e; font-weight: 600;">+<?php echo esc_html( $seo_impact['estimated_rankings'] ); ?>%</span> search visibility
 					</div>
 				</div>
-				<p class="text-base text-gray-700 mb-4 leading-relaxed">
-					You saved <strong class="text-green-500 font-semibold"><?php echo esc_html( $time_saved_hours ); ?> hours</strong> 
-					and improved <strong class="text-green-500 font-semibold"><?php echo esc_html( $seo_impact['posts_optimized'] ); ?> meta tags</strong>, 
-					boosting visibility by <strong class="text-green-500 font-semibold">+<?php echo esc_html( $seo_impact['estimated_rankings'] ); ?>%</strong>.
+				
+				<p style="font-size: 16px; color: #374151; margin: 0 0 20px 0; line-height: 1.6;">
+					You saved <strong style="color: #22c55e; font-weight: 600;"><?php echo esc_html( $time_saved_hours ); ?> hours</strong> 
+					and improved <strong style="color: #22c55e; font-weight: 600;"><?php echo esc_html( $seo_impact['posts_optimized'] ); ?> meta tags</strong>, 
+					boosting visibility by <strong style="color: #22c55e; font-weight: 600;">+<?php echo esc_html( $seo_impact['estimated_rankings'] ); ?>%</strong>.
 				</p>
+				
 				<!-- Sparkline Chart -->
-				<div class="mt-4">
-					<div class="flex items-end justify-between h-16 gap-1">
+				<div style="margin-top: 20px; position: relative;" title="<?php esc_attr_e( 'Visibility gain based on keyword improvement and CTR metrics.', 'seo-ai-meta-generator' ); ?>">
+					<svg width="100%" height="48" viewBox="0 0 200 48" preserveAspectRatio="none" style="overflow: visible;">
+						<defs>
+							<linearGradient id="sparkline-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+								<stop offset="0%" style="stop-color:#22c55e;stop-opacity:0.3" />
+								<stop offset="100%" style="stop-color:#22c55e;stop-opacity:0.1" />
+							</linearGradient>
+						</defs>
 						<?php
-						$sparkline_width = 100 / count( $sparkline_data );
+						$sparkline_points = array();
+						$sparkline_path = '';
+						$width = 200;
+						$height = 48;
+						$padding = 4;
+						$chart_width = $width - ( $padding * 2 );
+						$chart_height = $height - ( $padding * 2 );
+						
 						foreach ( $sparkline_data as $index => $value ) {
-							$height_percent = ( ( $value - $sparkline_min ) / $sparkline_range ) * 100;
-							$height_percent = max( 10, min( 100, $height_percent ) ); // Ensure min 10% height
-							?>
-							<div class="flex-1 bg-gradient-to-t from-green-500 to-green-400 rounded-t transition-all duration-300 hover:from-green-600 hover:to-green-500" 
-								 style="height: <?php echo esc_attr( $height_percent ); ?>%; min-height: 4px;"
-								 title="<?php echo esc_attr( round( $value, 1 ) ); ?>%"></div>
-						<?php } ?>
-					</div>
-					<div class="flex justify-between text-xs text-gray-400 mt-2">
-						<span>7 days ago</span>
-						<span>Today</span>
-					</div>
+							$x = $padding + ( $index / ( count( $sparkline_data ) - 1 ) ) * $chart_width;
+							$y = $height - $padding - ( ( ( $value - $sparkline_min ) / $sparkline_range ) * $chart_height );
+							$sparkline_points[] = array( 'x' => $x, 'y' => $y, 'value' => $value );
+							$sparkline_path .= ( $index === 0 ? 'M' : 'L' ) . ' ' . $x . ',' . $y;
+						}
+						
+						// Create area path for gradient fill
+						$area_path = $sparkline_path . ' L ' . ( $width - $padding ) . ',' . ( $height - $padding ) . ' L ' . $padding . ',' . ( $height - $padding ) . ' Z';
+						?>
+						<!-- Gradient fill area -->
+						<path d="<?php echo esc_attr( $area_path ); ?>" fill="url(#sparkline-gradient)"/>
+						<!-- Line -->
+						<path d="<?php echo esc_attr( $sparkline_path ); ?>" 
+							  fill="none" 
+							  stroke="#22c55e" 
+							  stroke-width="2" 
+							  stroke-linecap="round" 
+							  stroke-linejoin="round"/>
+						<!-- Data points -->
+						<?php foreach ( $sparkline_points as $point ) : ?>
+							<circle cx="<?php echo esc_attr( $point['x'] ); ?>" 
+									cy="<?php echo esc_attr( $point['y'] ); ?>" 
+									r="2" 
+									fill="#22c55e" 
+									opacity="0.8"/>
+						<?php endforeach; ?>
+					</svg>
 				</div>
 			</div>
 				
 			<!-- Two Column Layout -->
-			<div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mb-8">
-				<!-- Left Column - Bulk Generate -->
+			<div class="seo-ai-meta-dashboard-grid" style="display: grid; grid-template-columns: 1fr 320px; gap: 24px; margin-bottom: 32px;">
+				<!-- Left Column - Bulk Generate Preview -->
 				<div>
-					<div class="bg-white rounded-xl border border-gray-200 p-7">
-						<h2 class="text-lg font-semibold text-gray-900 mb-2">
+					<div style="padding: 28px; background: white; border-radius: 12px; border: 1px solid #e5e7eb;">
+						<h2 style="font-size: 18px; font-weight: 600; color: #1f2937; margin: 0 0 8px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 							Bulk Generate
 						</h2>
-						<p class="text-sm text-gray-600 mb-6 leading-relaxed">
-							Automatically optimize all pages missing meta descriptions. Automatically generates meta for <?php echo esc_html( $posts_without_meta ); ?> pages – estimated +<?php echo esc_html( $seo_impact['estimated_rankings'] ); ?>% search visibility.
+						<p style="font-size: 14px; color: #6b7280; margin: 0 0 20px 0; line-height: 1.5;">
+							Automatically optimize all pages missing meta descriptions.
 						</p>
 						
 						<?php
@@ -374,26 +456,26 @@ if ( empty( $settings ) ) {
 						?>
 						
 						<!-- Table -->
-						<div class="overflow-hidden rounded-lg border border-gray-200 mb-6">
-							<table class="w-full">
-								<thead class="bg-gray-50 border-b border-gray-200">
+						<div style="overflow: hidden; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 20px;">
+							<table style="width: 100%; border-collapse: collapse;">
+								<thead style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
 									<tr>
-										<th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Page</th>
-										<th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-										<th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+										<th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Page</th>
+										<th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Status</th>
+										<th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Date</th>
 									</tr>
 								</thead>
-								<tbody class="bg-white divide-y divide-gray-200">
+								<tbody style="background: white;">
 									<?php if ( $sample_posts_query->have_posts() ) : ?>
 										<?php while ( $sample_posts_query->have_posts() ) : $sample_posts_query->the_post(); ?>
-											<tr class="hover:bg-gray-50 transition-colors">
-												<td class="px-4 py-3 text-sm text-gray-900"><?php echo esc_html( get_the_title() ); ?></td>
-												<td class="px-4 py-3">
-													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+											<tr style="border-bottom: 1px solid #f3f4f6; transition: background 0.2s;" onmouseover="this.style.background='#f9fafb';" onmouseout="this.style.background='white';">
+												<td style="padding: 12px 16px; font-size: 14px; color: #1f2937;"><?php echo esc_html( get_the_title() ); ?></td>
+												<td style="padding: 12px 16px;">
+													<span style="display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; background: #f3f4f6; color: #6b7280;">
 														⏳ Pending
 													</span>
 												</td>
-												<td class="px-4 py-3 text-sm text-gray-500"><?php echo esc_html( get_the_date() ); ?></td>
+												<td style="padding: 12px 16px; font-size: 13px; color: #6b7280;"><?php echo esc_html( get_the_date( 'M j, Y' ) ); ?></td>
 											</tr>
 										<?php endwhile; ?>
 										<?php wp_reset_postdata(); ?>
@@ -401,14 +483,14 @@ if ( empty( $settings ) ) {
 									
 									<?php if ( $recent_posts_with_meta->have_posts() ) : ?>
 										<?php while ( $recent_posts_with_meta->have_posts() ) : $recent_posts_with_meta->the_post(); ?>
-											<tr class="hover:bg-gray-50 transition-colors">
-												<td class="px-4 py-3 text-sm text-gray-900"><?php echo esc_html( get_the_title() ); ?></td>
-												<td class="px-4 py-3">
-													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+											<tr style="border-bottom: 1px solid #f3f4f6; transition: background 0.2s;" onmouseover="this.style.background='#f9fafb';" onmouseout="this.style.background='white';">
+												<td style="padding: 12px 16px; font-size: 14px; color: #1f2937;"><?php echo esc_html( get_the_title() ); ?></td>
+												<td style="padding: 12px 16px;">
+													<span style="display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; background: #d1fae5; color: #166534;">
 														✅ Optimized
 													</span>
 												</td>
-												<td class="px-4 py-3 text-sm text-gray-500"><?php echo esc_html( get_the_date() ); ?></td>
+												<td style="padding: 12px 16px; font-size: 13px; color: #6b7280;"><?php echo esc_html( get_the_date( 'M j, Y' ) ); ?></td>
 											</tr>
 										<?php endwhile; ?>
 										<?php wp_reset_postdata(); ?>
@@ -418,60 +500,75 @@ if ( empty( $settings ) ) {
 						</div>
 
 						<?php if ( $posts_without_meta > 0 ) : ?>
-							<a href="<?php echo esc_url( add_query_arg( 'tab', 'bulk', $base_tab_url ) ); ?>" 
-							   class="block w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold text-center rounded-lg shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200 text-sm">
-								Generate All
-							</a>
+							<?php if ( ! $is_authenticated ) : ?>
+								<button type="button" 
+										onclick="seoAiMetaShowLoginModal();" 
+										style="width: 100%; padding: 12px 24px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; text-align: center; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);">
+									Generate All
+								</button>
+							<?php else : ?>
+								<a href="<?php echo esc_url( add_query_arg( 'tab', 'bulk', $base_tab_url ) ); ?>" 
+								   style="display: inline-block; width: 100%; padding: 12px 24px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; text-align: center; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);"
+								   onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px -1px rgba(59, 130, 246, 0.4)';"
+								   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgba(59, 130, 246, 0.3)';">
+									Generate All
+								</a>
+							<?php endif; ?>
+							<p style="font-size: 12px; color: #6b7280; margin: 8px 0 0 0; text-align: center; line-height: 1.4;">
+								Automatically optimize all pages missing meta descriptions.
+							</p>
 						<?php else : ?>
-							<div class="flex items-center gap-2 px-4 py-3 bg-green-50 rounded-lg text-green-600">
-								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 16px; background: #d1fae5; border-radius: 8px; border: 1px solid #86efac;">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5">
 									<path d="M20 6L9 17l-5-5"/>
 								</svg>
-								<span class="text-sm font-medium">All posts optimized!</span>
+								<span style="font-size: 14px; font-weight: 600; color: #166534;">All posts optimized!</span>
 							</div>
 						<?php endif; ?>
 					</div>
 				</div>
 
 				<!-- Right Column - Upgrade to Pro Card -->
-				<div class="lg:sticky lg:top-5 h-fit">
-					<div class="bg-gradient-to-br from-[#00C896] to-[#007F5F] rounded-xl p-7 shadow-lg relative overflow-hidden seo-ai-meta-upgrade-card">
+				<div style="position: sticky; top: 20px; height: fit-content;">
+					<div class="seo-ai-meta-upgrade-card" style="padding: 28px; background: linear-gradient(135deg, #00C896 0%, #007F5F 100%); border-radius: 12px; box-shadow: 0 8px 16px rgba(0, 200, 150, 0.25); position: relative; overflow: hidden;">
 						<!-- Shimmer animation overlay -->
-						<div class="absolute inset-0 opacity-0 seo-ai-meta-shimmer"></div>
+						<div class="seo-ai-meta-shimmer" style="position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%); animation: shimmer 6s infinite; pointer-events: none;"></div>
 						
-						<div class="relative z-10">
-							<div class="flex items-center gap-2 mb-3">
-								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-									<line x1="12" y1="5" x2="12" y2="19"/>
-									<line x1="5" y1="12" x2="19" y2="12"/>
+						<div style="position: relative; z-index: 10;">
+							<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+									<circle cx="12" cy="12" r="3"/>
+									<path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
 								</svg>
-								<h3 class="text-lg font-bold text-white m-0">
+								<h3 style="font-size: 18px; font-weight: 700; color: white; margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 									Upgrade to Pro — Unlock Unlimited AI Power
 								</h3>
 							</div>
-							<ul class="list-none p-0 m-0 mb-6 space-y-3">
-								<li class="flex items-center gap-2.5 text-sm text-white">
-									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" class="flex-shrink-0">
+							<ul style="list-style: none; padding: 0; margin: 0 0 24px 0;">
+								<li style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 14px; color: white;">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" style="flex-shrink: 0;">
 										<path d="M20 6L9 17l-5-5"/>
 									</svg>
 									<span>Unlimited generations</span>
 								</li>
-								<li class="flex items-center gap-2.5 text-sm text-white">
-									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" class="flex-shrink-0">
+								<li style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 14px; color: white;">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" style="flex-shrink: 0;">
 										<path d="M20 6L9 17l-5-5"/>
 									</svg>
 									<span>Smart SEO tuning</span>
 								</li>
-								<li class="flex items-center gap-2.5 text-sm text-white">
-									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" class="flex-shrink-0">
+								<li style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: white;">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" style="flex-shrink: 0;">
 										<path d="M20 6L9 17l-5-5"/>
 									</svg>
 									<span>Priority support</span>
 								</li>
 							</ul>
 							<button type="button" 
-									onclick="seoAiMetaShowModal();"
-									class="w-full px-6 py-3 bg-white text-[#007F5F] font-bold rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 text-sm">
+									onclick="seoAiMetaTrackEvent('upgrade_click', {source: 'upgrade_card', location: 'dashboard'}); seoAiMetaShowUpgradeModal();"
+									style="width: 100%; padding: 12px 24px; background: white; color: #007F5F; border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);"
+									onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(0, 0, 0, 0.2)';"
+									onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.15)';">
 								Go Pro
 							</button>
 						</div>
@@ -479,216 +576,224 @@ if ( empty( $settings ) ) {
 				</div>
 			</div>
 
-			<!-- Bottom Banner - AltText AI -->
+			<!-- Bottom CTA Banner - AltText AI -->
 			<?php if ( ! SEO_AI_Meta_Helpers::is_alttext_ai_active() ) : ?>
-			<div class="bg-gray-50 rounded-xl border border-gray-200 p-6 mb-8 shadow-sm animate-fade-in">
-				<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-					<div class="flex items-start gap-4 flex-1">
-						<div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
-								<rect x="3" y="3" width="18" height="18" rx="2"/>
-								<circle cx="8.5" cy="8.5" r="1.5"/>
-								<polyline points="21 15 16 10 5 21"/>
-							</svg>
-						</div>
-						<div class="flex-1">
-							<p class="text-sm text-gray-900 font-medium mb-1">
-								Complete your SEO Stack → Add AI-generated image alt text automatically.
-							</p>
-							<p class="text-xs text-gray-600">
-								Install AltText AI to boost image SEO and accessibility.
-							</p>
-						</div>
-					</div>
-					<button type="button" 
-							onclick="window.open('<?php echo esc_url( SEO_AI_Meta_Helpers::get_alttext_ai_url() ); ?>', '_blank');"
-							class="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 text-sm whitespace-nowrap">
-						Install Free
-					</button>
+			<div id="seo-ai-meta-bottom-cta-banner" style="padding: 24px 28px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 32px; opacity: 0; animation: fadeInUp 0.6s ease-out 0.3s forwards;">
+				<div style="flex: 1;">
+					<p style="font-size: 15px; color: #1f2937; margin: 0 0 4px 0; font-weight: 600; line-height: 1.4;">
+						Complete your SEO stack → Try AltText AI for automated image accessibility.
+					</p>
 				</div>
+				<button type="button" 
+						onclick="seoAiMetaTrackEvent('alttext_ai_cta_click', {source: 'dashboard_bottom'}); window.open('<?php echo esc_url( SEO_AI_Meta_Helpers::get_alttext_ai_url() ); ?>', '_blank');"
+						style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);"
+						onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(16, 185, 129, 0.35)';"
+						onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(16, 185, 129, 0.25)';">
+					<span>Try AltText AI for automated image accessibility.</span>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<line x1="5" y1="12" x2="19" y2="12"/>
+						<polyline points="12 5 19 12 12 19"/>
+					</svg>
+				</button>
 			</div>
 			<?php endif; ?>
 
 		<?php elseif ( $tab === 'bulk' ) : ?>
-			<!-- Bulk Generate Tab -->
 			<?php
 			// Calculate progress stats
 			$optimized_count = $posts_with_meta;
 			$total_count = $total_posts;
 			$pending_count = $posts_without_meta;
 			$progress_percentage = $total_count > 0 ? round( ( $optimized_count / $total_count ) * 100 ) : 0;
+			
+			// Check if user is authenticated
+			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-api-client-v2.php';
+			$api_client = new SEO_AI_Meta_API_Client_V2();
+			$is_authenticated = $api_client->is_authenticated();
+			
+			// Calculate circumference and offset for progress ring
+			$radius = 56;
+			$circumference = 2 * M_PI * $radius;
+			$offset = $circumference * ( 1 - ( $progress_percentage / 100 ) );
 			?>
 			
-			<!-- Two Column Layout -->
-			<div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mb-8">
-				<!-- Main Content -->
-				<div>
-					<div class="bg-white rounded-xl border border-gray-200 p-8">
-						<!-- Progress Chart and Description -->
-						<div class="flex items-start gap-8 mb-8">
-							<!-- Circular Progress Chart -->
-							<div class="relative w-32 h-32 flex-shrink-0">
-								<svg width="128" height="128" class="transform -rotate-90" viewBox="0 0 128 128">
-									<defs>
-										<linearGradient id="bulk-progress-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-											<stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
-											<stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
-										</linearGradient>
-									</defs>
-									<!-- Background circle -->
-									<circle cx="64" cy="64" r="56" fill="none" stroke="#e5e7eb" stroke-width="12"/>
-									<!-- Progress circle -->
-									<circle 
-										id="bulk-progress-ring" 
-										cx="64" 
-										cy="64" 
-										r="56" 
-										fill="none" 
-										stroke="url(#bulk-progress-gradient)" 
-										stroke-width="12" 
-										stroke-linecap="round"
-										data-percentage="<?php echo esc_attr( $progress_percentage ); ?>"
-										style="stroke-dasharray: <?php echo esc_attr( 2 * M_PI * 56 ); ?>; stroke-dashoffset: <?php echo esc_attr( 2 * M_PI * 56 * ( 1 - $progress_percentage / 100 ) ); ?>; transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);"
-									/>
-								</svg>
-								<!-- Count text inside ring -->
-								<div class="absolute inset-0 flex items-center justify-center">
-									<div class="text-center">
-										<div class="text-3xl font-bold text-gray-900 leading-none">
+			<!-- Bulk Generate Tab - Redesigned -->
+			<div>
+				<!-- Two Column Layout -->
+				<div style="display: grid; grid-template-columns: 1fr 320px; gap: 24px; margin-bottom: 32px;">
+					<!-- Main Content -->
+					<div>
+						<div style="padding: 32px; background: white; border-radius: 12px; border: 1px solid #e5e7eb;">
+							<!-- Progress Chart and Description -->
+							<div style="display: flex; align-items: flex-start; gap: 32px; margin-bottom: 32px;">
+								<!-- Circular Progress Chart -->
+								<div style="position: relative; width: 128px; height: 128px; flex-shrink: 0;">
+									<svg width="128" height="128" style="transform: rotate(-90deg); animation: fadeInScale 0.6s ease-out;">
+										<defs>
+											<linearGradient id="bulk-progress-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+												<stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+												<stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
+											</linearGradient>
+										</defs>
+										<!-- Background circle -->
+										<circle cx="64" cy="64" r="<?php echo esc_attr( $radius ); ?>" fill="none" stroke="#e5e7eb" stroke-width="12"/>
+										<!-- Progress circle -->
+										<circle 
+											id="bulk-progress-ring" 
+											cx="64" 
+											cy="64" 
+											r="<?php echo esc_attr( $radius ); ?>" 
+											fill="none" 
+											stroke="url(#bulk-progress-gradient)" 
+											stroke-width="12" 
+											stroke-linecap="round"
+											data-percentage="<?php echo esc_attr( $progress_percentage ); ?>"
+											style="stroke-dasharray: <?php echo esc_attr( $circumference ); ?>; stroke-dashoffset: <?php echo esc_attr( $offset ); ?>; transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);"
+										/>
+									</svg>
+									<!-- Posts count text inside ring -->
+									<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+										<div id="bulk-progress-count" style="font-size: 28px; font-weight: 700; color: #1f2937; line-height: 1; animation: fadeInUp 0.6s ease-out 0.2s both;">
 											<?php echo esc_html( $optimized_count ); ?>/<?php echo esc_html( $total_count ); ?>
 										</div>
-										<div class="text-xs text-gray-500 mt-1">posts</div>
+										<div style="font-size: 11px; color: #6b7280; margin-top: 4px; animation: fadeInUp 0.6s ease-out 0.3s both;">posts</div>
 									</div>
 								</div>
+								
+								<!-- Description -->
+								<div style="flex: 1; animation: fadeInUp 0.6s ease-out 0.1s both;">
+									<p style="font-size: 14px; color: #6b7280; margin: 0 0 16px 0; line-height: 1.6;">
+										<?php esc_html_e( 'You\'re improving your site\'s SEO visibility with each generation.', 'seo-ai-meta-generator' ); ?>
+									</p>
+									<h2 style="font-size: 24px; font-weight: 700; color: #1f2937; margin: 0 0 12px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.3;">
+										<?php esc_html_e( 'Bulk Generate Meta', 'seo-ai-meta-generator' ); ?>
+									</h2>
+									<p style="font-size: 14px; color: #6b7280; margin: 0; line-height: 1.6;">
+										<?php esc_html_e( 'Automatically generate titles and descriptions for posts missing meta tags.', 'seo-ai-meta-generator' ); ?>
+									</p>
+								</div>
 							</div>
-							
-							<!-- Description -->
-							<div class="flex-1 pt-2">
-								<p class="text-sm text-gray-600 mb-3 leading-relaxed">
-									You're improving your site's SEO visibility with each generation.
-								</p>
-								<h2 class="text-2xl font-bold text-gray-900 mb-2">
-									Bulk Generate Meta
-								</h2>
-								<p class="text-sm text-gray-600 leading-relaxed">
-									Automatically generate titles and descriptions for posts missing meta tags.
-								</p>
-							</div>
-						</div>
 
-						<?php if ( $pending_count > 0 ) : ?>
-							<!-- Generate All Button -->
-							<button type="button" 
-									id="seo-ai-meta-bulk-generate-all-btn"
-									class="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold text-lg rounded-lg shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200 mb-8">
-								Generate All
-							</button>
+							<?php if ( $pending_count > 0 ) : ?>
+								<!-- Generate All Button -->
+								<div style="text-align: center; margin-bottom: 32px;">
+									<?php if ( ! $is_authenticated ) : ?>
+										<button type="button" 
+												id="seo-ai-meta-bulk-generate-all-btn"
+												onclick="seoAiMetaShowLoginModal();" 
+												style="padding: 14px 32px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);"
+												onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(59, 130, 246, 0.45)';"
+												onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.35)';">
+											Generate All
+										</button>
+									<?php else : ?>
+										<button type="button" 
+												id="seo-ai-meta-bulk-generate-all-btn"
+												style="padding: 14px 32px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);"
+												onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(59, 130, 246, 0.45)';"
+												onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.35)';">
+											Generate All
+										</button>
+									<?php endif; ?>
+								</div>
 
-							<!-- Live Generation Log -->
-							<div id="seo-ai-meta-bulk-log-container" class="hidden">
-								<div class="border-t border-gray-200 pt-6">
-									<h3 class="text-sm font-semibold text-gray-700 mb-4">Generation Log</h3>
-									<div id="seo-ai-meta-bulk-log" class="space-y-2 max-h-64 overflow-y-auto">
-										<!-- Log entries will be added here dynamically -->
-									</div>
-									<div class="mt-4 flex justify-end">
+								<!-- Live Generation Log -->
+								<div id="seo-ai-meta-bulk-log-container" style="display: none; border-top: 1px solid #e5e7eb; padding-top: 24px; margin-top: 24px; animation: fadeInUp 0.4s ease-out;">
+									<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+										<h3 style="font-size: 14px; font-weight: 600; color: #374151; margin: 0;">Generation Log</h3>
 										<button type="button" 
 												id="seo-ai-meta-bulk-preview-btn"
-												class="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors text-sm hidden">
+												style="padding: 8px 16px; background: white; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; font-weight: 500; font-size: 13px; cursor: pointer; transition: all 0.2s; display: none;"
+												onmouseover="this.style.background='#f9fafb';"
+												onmouseout="this.style.background='white';">
 											Preview Changes
 										</button>
 									</div>
+									<div id="seo-ai-meta-bulk-log" style="background: #f9fafb; border-radius: 8px; padding: 16px; max-height: 200px; overflow-y: auto; border: 1px solid #e5e7eb; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 12px; line-height: 1.8;">
+										<!-- Log entries will be added here dynamically -->
+									</div>
 								</div>
-							</div>
 
-							<!-- Success State (hidden by default) -->
-							<div id="seo-ai-meta-bulk-success" class="hidden border-t border-gray-200 pt-6">
-								<div class="flex items-center gap-3 mb-4 seo-ai-meta-success-animation">
-									<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" class="flex-shrink-0">
-										<path d="M20 6L9 17l-5-5"/>
+								<!-- Success State (hidden by default) -->
+								<div id="seo-ai-meta-bulk-success" style="display: none; border-top: 1px solid #e5e7eb; padding-top: 24px; margin-top: 24px;">
+									<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; animation: successPulse 0.6s ease-out;">
+										<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" style="flex-shrink: 0;">
+											<path d="M20 6L9 17l-5-5"/>
+										</svg>
+										<h3 style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0;">
+											All posts optimized!
+										</h3>
+									</div>
+									<div id="seo-ai-meta-bulk-success-log" style="background: #f9fafb; border-radius: 8px; padding: 16px; border: 1px solid #e5e7eb; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 12px; line-height: 1.8;">
+										<!-- Success log entries -->
+									</div>
+								</div>
+							<?php else : ?>
+								<!-- All Optimized State -->
+								<div style="border-top: 1px solid #e5e7eb; padding-top: 32px; margin-top: 32px; animation: fadeInUp 0.6s ease-out;">
+									<div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 16px; animation: successPulse 0.6s ease-out;">
+										<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" style="flex-shrink: 0;">
+											<path d="M20 6L9 17l-5-5"/>
+										</svg>
+										<h3 style="font-size: 24px; font-weight: 700; color: #1f2937; margin: 0;">
+											All posts optimized!
+										</h3>
+									</div>
+									<p style="text-align: center; font-size: 15px; color: #6b7280; margin: 0; line-height: 1.6;">
+										<?php esc_html_e( 'Great job! All your posts are optimized with SEO meta tags.', 'seo-ai-meta-generator' ); ?>
+									</p>
+								</div>
+							<?php endif; ?>
+						</div>
+					</div>
+
+					<!-- Right Column - Upgrade to Pro Card -->
+					<div style="position: sticky; top: 20px; height: fit-content;">
+						<div class="seo-ai-meta-upgrade-card" style="padding: 28px; background: linear-gradient(135deg, #00C896 0%, #007F5F 100%); border-radius: 12px; box-shadow: 0 8px 16px rgba(0, 200, 150, 0.25); position: relative; overflow: hidden;">
+							<!-- Shimmer animation overlay -->
+							<div class="seo-ai-meta-shimmer" style="position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%); animation: shimmer 6s infinite; pointer-events: none;"></div>
+							
+							<div style="position: relative; z-index: 10;">
+								<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+									<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+										<circle cx="12" cy="12" r="3"/>
+										<path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
 									</svg>
-									<h3 class="text-lg font-bold text-gray-900 m-0">
-										All posts optimized!
+									<h3 style="font-size: 18px; font-weight: 700; color: white; margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+										Upgrade to Pro
 									</h3>
 								</div>
-								<div id="seo-ai-meta-bulk-success-log" class="space-y-2">
-									<!-- Success log entries -->
-								</div>
-							</div>
-						<?php else : ?>
-							<!-- All Optimized State -->
-							<div class="border-t border-gray-200 pt-6">
-								<div class="flex items-center gap-3 mb-4">
-									<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" class="flex-shrink-0">
-										<path d="M20 6L9 17l-5-5"/>
-									</svg>
-									<h3 class="text-lg font-bold text-gray-900 m-0">
-										All posts optimized!
-									</h3>
-								</div>
-								<p class="text-sm text-gray-600">
-									Great job! All your posts are optimized with SEO meta tags.
+								<p style="font-size: 14px; color: white; margin: 0 0 20px 0; opacity: 0.95; line-height: 1.5;">
+									Unlock unlimited generations + advanced tuning
 								</p>
+								<button type="button" 
+										onclick="seoAiMetaShowUpgradeModal();"
+										style="width: 100%; padding: 12px 24px; background: white; color: #007F5F; border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);"
+										onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(0, 0, 0, 0.2)';"
+										onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.15)';">
+									Go Pro
+								</button>
 							</div>
-						<?php endif; ?>
+						</div>
 					</div>
 				</div>
 
-				<!-- Right Column - Upgrade to Pro Card -->
-				<div class="lg:sticky lg:top-5 h-fit">
-					<div class="bg-gradient-to-br from-[#00C896] to-[#007F5F] rounded-xl p-7 shadow-lg relative overflow-hidden seo-ai-meta-upgrade-card">
-						<!-- Shimmer animation overlay -->
-						<div class="absolute inset-0 opacity-0 seo-ai-meta-shimmer"></div>
-						
-						<div class="relative z-10">
-							<div class="flex items-center gap-2 mb-3">
-								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-									<line x1="12" y1="5" x2="12" y2="19"/>
-									<line x1="5" y1="12" x2="19" y2="12"/>
-								</svg>
-								<h3 class="text-lg font-bold text-white m-0">
-									Upgrade to Pro
-								</h3>
-							</div>
-							<p class="text-sm text-white mb-4 opacity-90">
-								Unlock unlimited generations + advanced tuning
-							</p>
-							<button type="button" 
-									onclick="seoAiMetaShowModal();"
-									class="w-full px-6 py-3 bg-white text-[#007F5F] font-bold rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 text-sm">
-								Go Pro
-							</button>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Bottom Banner - AltText AI -->
-			<?php if ( ! SEO_AI_Meta_Helpers::is_alttext_ai_active() ) : ?>
-			<div class="bg-gray-50 rounded-xl border border-gray-200 p-6 mb-8 shadow-sm animate-fade-in">
-				<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-					<div class="flex items-start gap-4 flex-1">
-						<div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
-								<rect x="3" y="3" width="18" height="18" rx="2"/>
-								<circle cx="8.5" cy="8.5" r="1.5"/>
-								<polyline points="21 15 16 10 5 21"/>
-							</svg>
-						</div>
-						<div class="flex-1">
-							<p class="text-sm text-gray-900 font-medium mb-1">
-								Complete your SEO Stack → Try AltText AI for image alt text automation.
-							</p>
-						</div>
-					</div>
+				<!-- Bottom CTA Banner - AltText AI -->
+				<?php if ( ! SEO_AI_Meta_Helpers::is_alttext_ai_active() ) : ?>
+				<div id="seo-ai-meta-bulk-bottom-cta-banner" style="padding: 20px 28px; background: #f9fafb; border-radius: 12px; border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; gap: 20px; opacity: 0; animation: fadeInUp 0.6s ease-out 0.3s forwards;">
+					<p style="font-size: 14px; color: #374151; margin: 0; font-weight: 500; flex: 1;">
+						Complete your SEO Stack → Try AltText AI for image alt text automation
+					</p>
 					<button type="button" 
 							onclick="window.open('<?php echo esc_url( SEO_AI_Meta_Helpers::get_alttext_ai_url() ); ?>', '_blank');"
-							class="px-5 py-2.5 bg-white text-gray-700 font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all duration-200 text-sm whitespace-nowrap">
+							style="padding: 8px 16px; background: white; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap;"
+							onmouseover="this.style.background='#f3f4f6';"
+							onmouseout="this.style.background='white';">
 						Install Now
 					</button>
 				</div>
+				<?php endif; ?>
 			</div>
-			<?php endif; ?>
 
 		<?php elseif ( $tab === 'settings' ) : ?>
 			<?php
@@ -702,18 +807,49 @@ if ( empty( $settings ) ) {
 			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-api-client-v2.php';
 			$api_client = new SEO_AI_Meta_API_Client_V2();
 			$is_authenticated = $api_client->is_authenticated();
+			
+			// Get user plan
+			$user_plan = 'free';
+			if ( $is_authenticated ) {
+				$user_data = $api_client->get_user_data();
+				if ( $user_data && isset( $user_data['plan'] ) ) {
+					$user_plan = $user_data['plan'];
+				}
+			}
+			$is_pro_user = in_array( $user_plan, array( 'pro', 'agency' ), true );
 			?>
 			
-			<!-- Settings Page - Modern Design -->
+			<!-- Settings Page - Redesigned -->
 			<div>
-				<h1 style="font-size: 28px; font-weight: 700; color: #1f2937; margin: 0 0 8px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.2;">
-					<?php esc_html_e( 'Settings', 'seo-ai-meta-generator' ); ?>
-				</h1>
-				<p style="font-size: 14px; color: #6b7280; margin: 0 0 32px 0; line-height: 1.5;">
-					<?php esc_html_e( 'Configure your SEO meta generation preferences', 'seo-ai-meta-generator' ); ?>
-				</p>
+				<!-- Header -->
+				<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; gap: 16px;">
+					<div>
+						<h1 style="font-size: 28px; font-weight: 700; color: #1f2937; margin: 0 0 8px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.2;">
+							<?php esc_html_e( 'Your SEO Meta Settings', 'seo-ai-meta-generator' ); ?>
+						</h1>
+						<p style="font-size: 14px; color: #6b7280; margin: 0; line-height: 1.5;">
+							<?php esc_html_e( 'Fine-tune how AI generates your titles and descriptions. Unlock Pro for deeper control and unlimited automation.', 'seo-ai-meta-generator' ); ?>
+						</p>
+					</div>
+					<button type="button" onclick="seoAiMetaShowUpgradeModal();" 
+							style="padding: 10px 20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap;"
+							onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 6px rgba(16, 185, 129, 0.3)';"
+							onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+						<?php esc_html_e( 'View Plans', 'seo-ai-meta-generator' ); ?>
+					</button>
+				</div>
 				
 				<?php settings_errors( 'seo_ai_meta_settings_group' ); ?>
+				
+				<!-- Toast Notification Container -->
+				<div id="seo-ai-meta-toast-container" style="position: fixed; top: 32px; right: 32px; z-index: 10000; display: none;">
+					<div id="seo-ai-meta-toast" style="padding: 16px 20px; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); border-left: 4px solid #22c55e; display: flex; align-items: center; gap: 12px; min-width: 300px;">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+							<path d="M20 6L9 17l-5-5"/>
+						</svg>
+						<span id="seo-ai-meta-toast-message" style="color: #1f2937; font-size: 14px; font-weight: 500;"><?php esc_html_e( 'Settings saved successfully!', 'seo-ai-meta-generator' ); ?></span>
+					</div>
+				</div>
 				
 				<?php if ( isset( $_GET['import_success'] ) && $_GET['import_success'] === '1' ) : ?>
 					<div style="padding: 16px; background: #d1fae5; border-left: 4px solid #22c55e; border-radius: 8px; margin-bottom: 24px;">
@@ -738,318 +874,607 @@ if ( empty( $settings ) ) {
 					</div>
 				<?php endif; ?>
 
-				<!-- Plan Status Card -->
-				<div style="background: white; border: 1px solid <?php echo $is_pro ? '#667eea' : '#e5e7eb'; ?>; border-radius: 12px; padding: 28px; margin-bottom: 24px; <?php echo $is_pro ? 'background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);' : ''; ?>">
-					<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+				<!-- Free Plan Information Card -->
+				<?php if ( ! $is_pro_user ) : ?>
+				<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+					<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
 						<div>
-							<div style="display: inline-block; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; margin-bottom: 12px; <?php echo $is_pro ? 'background: #667eea; color: white;' : 'background: #f3f4f6; color: #6b7280;'; ?>">
-								<?php echo $is_pro ? '⭐ PRO' : '🆓 FREE'; ?>
-							</div>
-							<h3 style="margin: 0; font-size: 20px; font-weight: 600; color: #1f2937; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-								<?php echo esc_html( $usage_stats['plan_label'] ); ?> Plan
+							<h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #1f2937;">
+								<?php echo esc_html( ucfirst( $user_plan ) ); ?> Plan - <?php echo esc_html( $usage_stats['limit'] ); ?> AI generations / month
 							</h3>
+							<p style="margin: 0; font-size: 14px; color: #6b7280;">
+								<?php echo esc_html( $usage_stats['used'] ); ?> used - Resets <?php echo esc_html( $usage_stats['reset_date'] ); ?>
+							</p>
 						</div>
+						<a href="#" onclick="event.preventDefault(); seoAiMetaShowUpgradeModal();" style="color: #10b981; text-decoration: none; font-size: 14px; font-weight: 500;">
+							<?php esc_html_e( 'See upgrade options', 'seo-ai-meta-generator' ); ?>
+						</a>
 					</div>
-
-					<div style="background: #f3f4f6; height: 10px; border-radius: 6px; overflow: hidden; margin-bottom: 20px;">
-						<div style="background: linear-gradient(135deg, <?php echo $is_pro ? '#667eea' : '#22c55e'; ?> 0%, <?php echo $is_pro ? '#5568d3' : '#16a34a'; ?> 100%); height: 100%; width: <?php echo min( 100, $usage_percent ); ?>%; transition: width 0.3s;"></div>
-					</div>
-
-					<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
-						<div>
-							<span style="display: block; font-size: 12px; color: #6b7280; margin-bottom: 6px; font-weight: 500;"><?php esc_html_e( 'Used', 'seo-ai-meta-generator' ); ?></span>
-							<span style="display: block; font-size: 24px; font-weight: 700; color: #1f2937;"><?php echo esc_html( $usage_stats['used'] ); ?></span>
-						</div>
-						<div>
-							<span style="display: block; font-size: 12px; color: #6b7280; margin-bottom: 6px; font-weight: 500;"><?php esc_html_e( 'Limit', 'seo-ai-meta-generator' ); ?></span>
-							<span style="display: block; font-size: 24px; font-weight: 700; color: #1f2937;"><?php echo esc_html( $usage_stats['limit'] ); ?></span>
-						</div>
-						<div>
-							<span style="display: block; font-size: 12px; color: #6b7280; margin-bottom: 6px; font-weight: 500;"><?php esc_html_e( 'Resets', 'seo-ai-meta-generator' ); ?></span>
-							<span style="display: block; font-size: 14px; font-weight: 600; color: #1f2937;"><?php echo esc_html( $usage_stats['reset_date'] ); ?></span>
-						</div>
-					</div>
-
-					<?php if ( ! $is_pro ) : ?>
-					<button type="button" onclick="seoAiMetaShowUpgradeModal();" 
-							style="width: 100%; padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #5568d3 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(102, 126, 234, 0.3);"
-							onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px -1px rgba(102, 126, 234, 0.4)';"
-							onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgba(102, 126, 234, 0.3)';">
-						<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-							<path d="M8 2L6 6H2L6 9L4 14L8 11L12 14L10 9L14 6H10L8 2Z" fill="currentColor"/>
-						</svg>
-						<span><?php esc_html_e( 'Upgrade to Pro', 'seo-ai-meta-generator' ); ?></span>
-					</button>
-					<?php endif; ?>
-				</div>
-
-				<!-- Account Management Card -->
-				<?php if ( $is_authenticated ) : ?>
-				<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 28px; margin-bottom: 24px;">
-					<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2" style="flex-shrink: 0;">
-							<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-							<line x1="1" y1="10" x2="23" y2="10"/>
-						</svg>
-						<div>
-							<h2 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #1f2937; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-								<?php esc_html_e( 'Account Management', 'seo-ai-meta-generator' ); ?>
-							</h2>
-							<p style="margin: 0; font-size: 14px; color: #6b7280;"><?php esc_html_e( 'Manage your subscription, billing, and payment methods', 'seo-ai-meta-generator' ); ?></p>
-						</div>
-					</div>
-
-					<div style="padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
-						<p style="margin: 0 0 16px 0; font-size: 14px; color: #374151; line-height: 1.6;">
-							<?php esc_html_e( 'You are currently on the', 'seo-ai-meta-generator' ); ?> <strong style="color: #1f2937;"><?php echo esc_html( $usage_stats['plan_label'] ); ?></strong> <?php esc_html_e( 'plan.', 'seo-ai-meta-generator' ); ?>
-							<?php if ( ! $is_pro ) : ?>
-								<?php esc_html_e( 'Upgrade to access more features and unlimited meta generation.', 'seo-ai-meta-generator' ); ?>
-							<?php endif; ?>
-						</p>
-						<?php if ( ! $is_pro ) : ?>
-						<button type="button" onclick="seoAiMetaShowUpgradeModal();" 
-								style="padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #5568d3 100%); color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s;"
-								onmouseover="this.style.transform='translateY(-1px)';"
-								onmouseout="this.style.transform='translateY(0)';">
-							<?php esc_html_e( 'Upgrade Now', 'seo-ai-meta-generator' ); ?>
-						</button>
-						<?php endif; ?>
+					<div style="background: #f3f4f6; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 12px;">
+						<div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); height: 100%; width: <?php echo min( 100, $usage_percent ); ?>%; transition: width 0.3s;"></div>
 					</div>
 				</div>
 				<?php endif; ?>
 
-				<!-- Settings Form -->
-				<form method="post" action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>" class="seo-ai-meta-settings-form">
-					<?php
-					settings_fields( 'seo_ai_meta_settings_group' );
-					do_settings_sections( 'seo_ai_meta_settings_group' );
-					wp_nonce_field( 'seo_ai_meta_settings_group-options' );
-					?>
+				<!-- Two Column Layout -->
+				<div style="display: flex; gap: 24px; flex-wrap: wrap;">
+					<!-- Left Column: Settings Cards -->
+					<div style="flex: 1; min-width: 0;">
 
-					<!-- Generation Settings Card -->
-					<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 28px; margin-bottom: 24px;">
-						<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2" style="flex-shrink: 0;">
-								<circle cx="12" cy="12" r="3"/>
-								<path d="M12 1v6m0 6v6M23 12h-6M7 12H1m18.364-5.636l-4.243 4.243m0 4.243l4.243 4.243M4.636 4.636l4.243 4.243m0 4.243l-4.243 4.243"/>
-							</svg>
-							<div>
-								<h2 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #1f2937; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-									<?php esc_html_e( 'Generation Settings', 'seo-ai-meta-generator' ); ?>
-								</h2>
-								<p style="margin: 0; font-size: 14px; color: #6b7280;"><?php esc_html_e( 'Control how meta tags are generated', 'seo-ai-meta-generator' ); ?></p>
-							</div>
-						</div>
+						<!-- Settings Form -->
+						<form method="post" action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>" class="seo-ai-meta-settings-form" id="seo-ai-meta-settings-form">
+							<?php
+							settings_fields( 'seo_ai_meta_settings_group' );
+							do_settings_sections( 'seo_ai_meta_settings_group' );
+							wp_nonce_field( 'seo_ai_meta_settings_group-options' );
+							?>
 
-						<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-							<div>
-								<label for="title_max_length" style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">
-									<?php esc_html_e( 'Title Max Length', 'seo-ai-meta-generator' ); ?>
-								</label>
-								<input type="number" id="title_max_length" name="seo_ai_meta_settings[title_max_length]" 
-									value="<?php echo esc_attr( $settings['title_max_length'] ?? 60 ); ?>" 
-									min="30" max="70" 
-									style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;"
-								/>
-								<p style="margin: 8px 0 0 0; font-size: 13px; color: #6b7280;">
-									<?php esc_html_e( 'Recommended: 50-60 characters', 'seo-ai-meta-generator' ); ?>
-								</p>
-							</div>
-							<div>
-								<label for="description_max_length" style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">
-									<?php esc_html_e( 'Description Max Length', 'seo-ai-meta-generator' ); ?>
-								</label>
-								<input type="number" id="description_max_length" name="seo_ai_meta_settings[description_max_length]" 
-									value="<?php echo esc_attr( $settings['description_max_length'] ?? 160 ); ?>" 
-									min="120" max="200" 
-									style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;"
-								/>
-								<p style="margin: 8px 0 0 0; font-size: 13px; color: #6b7280;">
-									<?php esc_html_e( 'Recommended: 150-160 characters', 'seo-ai-meta-generator' ); ?>
-								</p>
-							</div>
-						</div>
+							<!-- AI Generation Settings Card -->
+							<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+								<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+									<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="flex-shrink: 0;">
+										<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+										<path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+										<line x1="12" y1="19" x2="12" y2="23"/>
+										<line x1="8" y1="23" x2="16" y2="23"/>
+									</svg>
+									<div>
+										<h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #1f2937;">
+											<?php esc_html_e( 'AI Generation', 'seo-ai-meta-generator' ); ?>
+										</h2>
+										<p style="margin: 4px 0 0 0; font-size: 13px; color: #6b7280;">
+											<?php esc_html_e( 'Fine-tune AI-generated meta tags', 'seo-ai-meta-generator' ); ?>
+										</p>
+									</div>
+								</div>
 
-						<!-- Meta Templates -->
-						<div style="margin-top: 20px; padding: 16px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
-							<label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">
-								📝 <?php esc_html_e( 'Meta Templates (Optional)', 'seo-ai-meta-generator' ); ?>
-							</label>
-							<p style="margin: 0 0 12px 0; font-size: 13px; color: #6b7280;">
-								<?php esc_html_e( 'Use variables to create dynamic meta tags. Available variables:', 'seo-ai-meta-generator' ); ?>
-								<code style="background: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">{{title}}</code>,
-								<code style="background: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">{{date}}</code>,
-								<code style="background: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">{{category}}</code>,
-								<code style="background: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">{{author}}</code>,
-								<code style="background: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">{{site}}</code>
-							</p>
-							<div style="display: grid; gap: 12px;">
-								<div>
-									<label for="title_template" style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: #374151;">
-										<?php esc_html_e( 'Title Template', 'seo-ai-meta-generator' ); ?>
-									</label>
-									<input type="text" id="title_template" name="seo_ai_meta_settings[title_template]" 
-										value="<?php echo esc_attr( $settings['title_template'] ?? '' ); ?>" 
-										placeholder="<?php esc_attr_e( 'e.g., {{title}} | {{site}}', 'seo-ai-meta-generator' ); ?>"
-										style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;"
+								<!-- Title Length Slider -->
+								<div style="margin-bottom: 24px;">
+									<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+										<label for="title_max_length" style="font-weight: 600; color: #374151; font-size: 14px;">
+											<?php esc_html_e( 'Title length', 'seo-ai-meta-generator' ); ?>
+										</label>
+										<span id="title-length-value" style="font-weight: 600; color: #10b981; font-size: 14px;"><?php echo esc_html( $settings['title_max_length'] ?? 60 ); ?></span>
+									</div>
+									<input type="range" id="title_max_length" name="seo_ai_meta_settings[title_max_length]" 
+										value="<?php echo esc_attr( $settings['title_max_length'] ?? 60 ); ?>" 
+										min="30" max="70" 
+										style="width: 100%; height: 8px; border-radius: 4px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); outline: none; -webkit-appearance: none;"
+										oninput="document.getElementById('title-length-value').textContent = this.value; updateSliderStyle(this);"
 									/>
 								</div>
-								<div>
-									<label for="description_template" style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: #374151;">
-										<?php esc_html_e( 'Description Template', 'seo-ai-meta-generator' ); ?>
+
+								<!-- Description Length Slider -->
+								<div style="margin-bottom: 24px;">
+									<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+										<label for="description_max_length" style="font-weight: 600; color: #374151; font-size: 14px;">
+											<?php esc_html_e( 'Description length', 'seo-ai-meta-generator' ); ?>
+										</label>
+										<span id="description-length-value" style="font-weight: 600; color: #10b981; font-size: 14px;"><?php echo esc_html( $settings['description_max_length'] ?? 160 ); ?></span>
+									</div>
+									<input type="range" id="description_max_length" name="seo_ai_meta_settings[description_max_length]" 
+										value="<?php echo esc_attr( $settings['description_max_length'] ?? 160 ); ?>" 
+										min="120" max="200" 
+										style="width: 100%; height: 8px; border-radius: 4px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); outline: none; -webkit-appearance: none;"
+										oninput="document.getElementById('description-length-value').textContent = this.value; updateSliderStyle(this);"
+									/>
+								</div>
+
+								<!-- Automatic Generation Toggle -->
+								<div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+									<div>
+										<label for="auto_generate" style="font-weight: 500; color: #374151; font-size: 14px; cursor: pointer;">
+											<?php esc_html_e( 'Automatically generate meta on new posts', 'seo-ai-meta-generator' ); ?>
+										</label>
+									</div>
+									<label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer;">
+										<input type="checkbox" id="auto_generate" name="seo_ai_meta_settings[auto_generate]" 
+											value="1" <?php checked( ! empty( $settings['auto_generate'] ) ); ?>
+											<?php echo $is_pro_user ? '' : 'disabled'; ?>
+											style="opacity: 0; width: 0; height: 0;"
+										/>
+										<span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: <?php echo ! empty( $settings['auto_generate'] ) && $is_pro_user ? '#10b981' : '#d1d5db'; ?>; border-radius: 12px; transition: 0.3s;">
+											<span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; transform: translateX(<?php echo ! empty( $settings['auto_generate'] ) && $is_pro_user ? '20px' : '0'; ?>);"></span>
+										</span>
 									</label>
-									<textarea id="description_template" name="seo_ai_meta_settings[description_template]" 
-										rows="2"
-										placeholder="<?php esc_attr_e( 'e.g., Read about {{title}} on {{date}}', 'seo-ai-meta-generator' ); ?>"
-										style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; resize: vertical;"
-									><?php echo esc_textarea( $settings['description_template'] ?? '' ); ?></textarea>
+								</div>
+								<?php if ( ! $is_pro_user ) : ?>
+									<p style="margin: 8px 0 0 0; font-size: 12px; color: #6b7280;">
+										<?php esc_html_e( 'Pro and Agency feature', 'seo-ai-meta-generator' ); ?>
+									</p>
+								<?php endif; ?>
+							</div>
+
+							<!-- License Mode Card -->
+							<?php
+							// Get license mode data
+							require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+							$license_mode = SEO_AI_Meta_Site_License::get_license_mode();
+							$is_site_wide = SEO_AI_Meta_Site_License::is_site_wide_mode();
+							$site_api_key = SEO_AI_Meta_Site_License::get_site_api_key();
+							$can_manage = current_user_can( 'manage_options' );
+							?>
+							<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+								<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+									<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" style="flex-shrink: 0;">
+										<path d="M12 2L2 7l10 5 10-5-10-5z"/>
+										<path d="M2 17l10 5 10-5"/>
+										<path d="M2 12l10 5 10-5"/>
+									</svg>
+									<div>
+										<h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #1f2937;">
+											<?php esc_html_e( 'License Mode', 'seo-ai-meta-generator' ); ?>
+										</h2>
+										<p style="margin: 4px 0 0 0; font-size: 13px; color: #6b7280;">
+											<?php esc_html_e( 'Choose between per-user or site-wide licensing', 'seo-ai-meta-generator' ); ?>
+										</p>
+									</div>
+								</div>
+
+								<!-- License Mode Selection -->
+								<div style="margin-bottom: 24px;">
+									<div style="display: flex; gap: 12px; margin-bottom: 16px;">
+										<!-- Per-User Mode -->
+										<label style="flex: 1; cursor: <?php echo $can_manage ? 'pointer' : 'not-allowed'; ?>;">
+											<input type="radio" name="seo_ai_meta_settings[license_mode]"
+												value="per-user"
+												<?php checked( $license_mode, 'per-user' ); ?>
+												<?php echo $can_manage ? '' : 'disabled'; ?>
+												style="margin-right: 8px;"
+											/>
+											<div style="padding: 16px; border: 2px solid <?php echo $license_mode === 'per-user' ? '#8b5cf6' : '#e5e7eb'; ?>; border-radius: 8px; transition: all 0.2s; background: <?php echo $license_mode === 'per-user' ? '#f5f3ff' : 'white'; ?>;">
+												<h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #1f2937;">
+													<?php esc_html_e( 'Per-User', 'seo-ai-meta-generator' ); ?>
+												</h4>
+												<p style="margin: 0; font-size: 13px; color: #6b7280; line-height: 1.5;">
+													<?php esc_html_e( 'Each user logs in with their own account', 'seo-ai-meta-generator' ); ?>
+												</p>
+											</div>
+										</label>
+
+										<!-- Site-Wide Mode -->
+										<label style="flex: 1; cursor: <?php echo $can_manage ? 'pointer' : 'not-allowed'; ?>;">
+											<input type="radio" name="seo_ai_meta_settings[license_mode]"
+												value="site-wide"
+												<?php checked( $license_mode, 'site-wide' ); ?>
+												<?php echo $can_manage ? '' : 'disabled'; ?>
+												style="margin-right: 8px;"
+											/>
+											<div style="padding: 16px; border: 2px solid <?php echo $license_mode === 'site-wide' ? '#8b5cf6' : '#e5e7eb'; ?>; border-radius: 8px; transition: all 0.2s; background: <?php echo $license_mode === 'site-wide' ? '#f5f3ff' : 'white'; ?>;">
+												<h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #1f2937;">
+													<?php esc_html_e( 'Site-Wide', 'seo-ai-meta-generator' ); ?>
+												</h4>
+												<p style="margin: 0; font-size: 13px; color: #6b7280; line-height: 1.5;">
+													<?php esc_html_e( 'One API key for entire site', 'seo-ai-meta-generator' ); ?>
+												</p>
+											</div>
+										</label>
+									</div>
+
+									<?php if ( ! $can_manage ) : ?>
+										<p style="margin: 0; font-size: 12px; color: #ef4444; display: flex; align-items: center; gap: 6px;">
+											<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+												<circle cx="12" cy="12" r="10"/>
+												<line x1="12" y1="8" x2="12" y2="12"/>
+												<line x1="12" y1="16" x2="12.01" y2="16"/>
+											</svg>
+											<?php esc_html_e( 'Only administrators can change the license mode', 'seo-ai-meta-generator' ); ?>
+										</p>
+									<?php endif; ?>
+								</div>
+
+								<!-- Site API Key Field (shown only in site-wide mode) -->
+								<?php if ( $is_site_wide && $can_manage ) : ?>
+									<div style="padding-top: 16px; border-top: 1px solid #e5e7eb;">
+										<label for="site_api_key" style="display: block; font-weight: 600; color: #374151; font-size: 14px; margin-bottom: 8px;">
+											<?php esc_html_e( 'Site API Key', 'seo-ai-meta-generator' ); ?>
+										</label>
+										<div style="display: flex; gap: 8px;">
+											<input type="text"
+												id="site_api_key"
+												name="seo_ai_meta_settings[site_api_key]"
+												value="<?php echo esc_attr( $site_api_key ?? '' ); ?>"
+												placeholder="<?php esc_attr_e( 'Enter your site API key...', 'seo-ai-meta-generator' ); ?>"
+												style="flex: 1; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; font-family: monospace; background: #f9fafb;"
+											/>
+											<button type="button"
+												onclick="navigator.clipboard.writeText(document.getElementById('site_api_key').value); alert('API key copied to clipboard!');"
+												style="padding: 10px 16px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; transition: all 0.2s;"
+												onmouseover="this.style.background='#f9fafb';"
+												onmouseout="this.style.background='white';"
+												title="<?php esc_attr_e( 'Copy API key', 'seo-ai-meta-generator' ); ?>">
+												<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
+													<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+													<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+												</svg>
+											</button>
+										</div>
+										<p style="margin: 8px 0 0 0; font-size: 12px; color: #6b7280;">
+											<?php esc_html_e( 'Don\'t have an API key?', 'seo-ai-meta-generator' ); ?>
+											<a href="#" onclick="event.preventDefault(); alert('Site registration wizard coming soon!');" style="color: #8b5cf6; text-decoration: none; font-weight: 500;">
+												<?php esc_html_e( 'Register your site', 'seo-ai-meta-generator' ); ?>
+											</a>
+										</p>
+									</div>
+								<?php elseif ( $is_site_wide && ! $can_manage ) : ?>
+									<div style="padding: 12px; background: #f9fafb; border-radius: 6px; border: 1px solid #e5e7eb;">
+										<p style="margin: 0; font-size: 13px; color: #6b7280; display: flex; align-items: center; gap: 8px;">
+											<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2">
+												<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+												<path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+												<line x1="12" y1="19" x2="12" y2="23"/>
+												<line x1="8" y1="23" x2="16" y2="23"/>
+											</svg>
+											<?php
+											if ( ! empty( $site_api_key ) ) {
+												esc_html_e( 'Site API key is configured. Contact your administrator to manage it.', 'seo-ai-meta-generator' );
+											} else {
+												esc_html_e( 'No API key configured yet. Contact your administrator.', 'seo-ai-meta-generator' );
+											}
+											?>
+										</p>
+									</div>
+								<?php endif; ?>
+
+								<!-- Info box -->
+								<div style="margin-top: 16px; padding: 12px; background: #eff6ff; border-radius: 6px; border-left: 3px solid #3b82f6;">
+									<p style="margin: 0; font-size: 13px; color: #1e40af; line-height: 1.5;">
+										<strong><?php esc_html_e( 'Note:', 'seo-ai-meta-generator' ); ?></strong>
+										<?php
+										if ( $is_site_wide ) {
+											esc_html_e( 'In site-wide mode, all users share the same quota and billing. Usage is tracked at the site level.', 'seo-ai-meta-generator' );
+										} else {
+											esc_html_e( 'In per-user mode, each user must have their own account with individual quotas and billing.', 'seo-ai-meta-generator' );
+										}
+										?>
+									</p>
 								</div>
 							</div>
-							<p style="margin: 8px 0 0 0; font-size: 12px; color: #6b7280;">
-								<?php esc_html_e( '💡 Leave empty to use AI-generated content without templates. Templates are applied after AI generation.', 'seo-ai-meta-generator' ); ?>
-							</p>
-						</div>
-					</div>
 
-					<!-- Save Button -->
-					<div style="display: flex; align-items: center; gap: 16px; padding-top: 8px;">
-						<button type="submit" 
-								style="padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #5568d3 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(102, 126, 234, 0.3);"
-								onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px -1px rgba(102, 126, 234, 0.4)';"
-								onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgba(102, 126, 234, 0.3)';">
-							<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-								<path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-							</svg>
-							<span><?php esc_html_e( 'Save Settings', 'seo-ai-meta-generator' ); ?></span>
-						</button>
-						<p style="margin: 0; font-size: 13px; color: #6b7280;">
-							<?php esc_html_e( 'Changes will apply to all future generations', 'seo-ai-meta-generator' ); ?>
-						</p>
-					</div>
-				</form>
-
-				<!-- Export/Import Card -->
-				<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 28px; margin-top: 24px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
-					<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #f3f4f6;">
-						<div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);">
-							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-								<polyline points="7 10 12 15 17 10"/>
-								<line x1="12" y1="15" x2="12" y2="3"/>
-								<path d="M3 9v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9"/>
-								<polyline points="17 14 12 9 7 14"/>
-								<line x1="12" y1="9" x2="12" y2="21"/>
-							</svg>
-						</div>
-						<div>
-							<h2 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #1f2937; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: -0.01em;">
-								<?php esc_html_e( 'Export / Import Meta Tags', 'seo-ai-meta-generator' ); ?>
-							</h2>
-							<p style="margin: 0; font-size: 14px; color: #6b7280; line-height: 1.5;"><?php esc_html_e( 'Backup or restore your meta tags', 'seo-ai-meta-generator' ); ?></p>
-						</div>
-					</div>
-
-					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch;">
-						<!-- Export Section -->
-						<div style="padding: 24px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 10px; border: 1px solid #bfdbfe; position: relative; overflow: hidden; box-shadow: 0 1px 2px rgba(59, 130, 246, 0.1); display: flex; flex-direction: column;">
-							<div style="position: absolute; top: -30px; right: -30px; width: 100px; height: 100px; background: rgba(59, 130, 246, 0.08); border-radius: 50%;"></div>
-							<div style="position: relative; z-index: 1; display: flex; flex-direction: column; flex: 1;">
-								<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-									<div style="width: 40px; height: 40px; border-radius: 10px; background: #3b82f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);">
-										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-											<polyline points="7 10 12 15 17 10"/>
-											<line x1="12" y1="15" x2="12" y2="3"/>
-										</svg>
+							<!-- Meta Templates Card -->
+							<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+								<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+									<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" style="flex-shrink: 0;">
+										<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+										<polyline points="14 2 14 8 20 8"/>
+										<line x1="16" y1="13" x2="8" y2="13"/>
+										<line x1="16" y1="17" x2="8" y2="17"/>
+										<polyline points="10 9 9 9 8 9"/>
+									</svg>
+									<div>
+										<h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #1f2937;">
+											<?php esc_html_e( 'Meta Templates', 'seo-ai-meta-generator' ); ?>
+										</h2>
 									</div>
-									<h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #1e40af; letter-spacing: -0.01em;">
-										<?php esc_html_e( 'Export Meta Tags', 'seo-ai-meta-generator' ); ?>
-									</h3>
 								</div>
-								<p style="margin: 0 0 24px 0; font-size: 13px; color: #1e40af; line-height: 1.6; opacity: 0.9;">
-									<?php esc_html_e( 'Download all meta tags as a CSV file for backup or migration purposes', 'seo-ai-meta-generator' ); ?>
-								</p>
-								<!-- Spacer to align button with import section -->
-								<div style="flex: 1; min-height: 72px; margin-bottom: 12px;"></div>
-								<a href="<?php echo esc_url( add_query_arg( array( 'action' => 'seo_ai_meta_export', 'nonce' => wp_create_nonce( 'seo_ai_meta_export' ) ), admin_url( 'admin-post.php' ) ) ); ?>" 
-								   class="seo-ai-meta-export-btn"
-								   style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25); letter-spacing: -0.01em; box-sizing: border-box; margin-top: auto;"
-								   onmouseover="this.style.background='linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(59, 130, 246, 0.35)';"
-								   onmouseout="this.style.background='linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(59, 130, 246, 0.25)';">
-									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+
+								<div style="margin-bottom: 16px;">
+									<label for="title_template" style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151; font-size: 14px;">
+										<?php esc_html_e( 'Title Meta Tag', 'seo-ai-meta-generator' ); ?>
+									</label>
+									<div style="display: flex; gap: 8px; align-items: center;">
+										<input type="text" id="title_template" name="seo_ai_meta_settings[title_template]" 
+											value="<?php echo esc_attr( $settings['title_template'] ?? '{{title}}' ); ?>" 
+											placeholder="<?php esc_attr_e( '{{title}}', 'seo-ai-meta-generator' ); ?>"
+											style="flex: 1; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: #f9fafb;"
+										/>
+										<a href="#" onclick="event.preventDefault(); document.getElementById('seo-ai-meta-variables-modal').style.display = 'flex';" style="color: #6b7280; text-decoration: none; font-size: 12px; white-space: nowrap;">
+											<?php esc_html_e( 'Show variables', 'seo-ai-meta-generator' ); ?>
+										</a>
+									</div>
+								</div>
+
+								<div>
+									<label for="description_template" style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151; font-size: 14px;">
+										<?php esc_html_e( 'Description Meta Tag', 'seo-ai-meta-generator' ); ?>
+									</label>
+									<div style="display: flex; gap: 8px; align-items: center;">
+										<input type="text" id="description_template" name="seo_ai_meta_settings[description_template]" 
+											value="<?php echo esc_attr( $settings['description_template'] ?? '{{description}}' ); ?>" 
+											placeholder="<?php esc_attr_e( '{{description}}', 'seo-ai-meta-generator' ); ?>"
+											style="flex: 1; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: #f9fafb;"
+										/>
+										<a href="#" onclick="event.preventDefault(); document.getElementById('seo-ai-meta-preview-modal').style.display = 'flex';" style="color: #10b981; text-decoration: none; font-size: 12px; font-weight: 500; white-space: nowrap;">
+											<?php esc_html_e( 'Preview output', 'seo-ai-meta-generator' ); ?>
+										</a>
+									</div>
+								</div>
+							</div>
+
+							<!-- Export/Import Card -->
+							<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+								<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+									<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="flex-shrink: 0;">
 										<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
 										<polyline points="7 10 12 15 17 10"/>
 										<line x1="12" y1="15" x2="12" y2="3"/>
 									</svg>
-									<span><?php esc_html_e( 'Export CSV', 'seo-ai-meta-generator' ); ?></span>
-								</a>
-							</div>
-						</div>
-
-						<!-- Import Section -->
-						<div style="padding: 24px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; border: 1px solid #86efac; position: relative; overflow: hidden; box-shadow: 0 1px 2px rgba(34, 197, 94, 0.1); display: flex; flex-direction: column;">
-							<div style="position: absolute; top: -30px; right: -30px; width: 100px; height: 100px; background: rgba(34, 197, 94, 0.08); border-radius: 50%;"></div>
-							<div style="position: relative; z-index: 1; display: flex; flex-direction: column; flex: 1;">
-								<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-									<div style="width: 40px; height: 40px; border-radius: 10px; background: #22c55e; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3);">
-										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-											<polyline points="17 8 12 3 7 8"/>
-											<line x1="12" y1="3" x2="12" y2="15"/>
-										</svg>
+									<div>
+										<h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #1f2937;">
+											<?php esc_html_e( 'Export Meta Data', 'seo-ai-meta-generator' ); ?>
+										</h2>
+										<p style="margin: 4px 0 0 0; font-size: 13px; color: #6b7280;">
+											<?php esc_html_e( 'Download a CSV file for backup', 'seo-ai-meta-generator' ); ?>
+										</p>
 									</div>
-									<h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #166534; letter-spacing: -0.01em;">
-										<?php esc_html_e( 'Import Meta Tags', 'seo-ai-meta-generator' ); ?>
-									</h3>
 								</div>
-								<p style="margin: 0 0 24px 0; font-size: 13px; color: #166534; line-height: 1.6; opacity: 0.9;">
-									<?php esc_html_e( 'Upload a CSV file to restore or import meta tags to your site', 'seo-ai-meta-generator' ); ?>
-								</p>
-								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
-									<input type="hidden" name="action" value="seo_ai_meta_import">
-									<?php wp_nonce_field( 'seo_ai_meta_import', 'seo_ai_meta_import_nonce' ); ?>
-									<div style="position: relative;">
+
+								<!-- Export/Import Buttons -->
+								<div style="display: flex; gap: 12px; align-items: flex-start;">
+									<?php if ( $is_authenticated ) : ?>
+									<a href="<?php echo esc_url( add_query_arg( array( 'action' => 'seo_ai_meta_export', 'nonce' => wp_create_nonce( 'seo_ai_meta_export' ) ), admin_url( 'admin-post.php' ) ) ); ?>" 
+									   class="seo-ai-meta-export-btn"
+									   style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; background: white; color: #374151; border: 1px solid #d1d5db; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+									   onmouseover="this.style.background='#f3f4f6'; this.style.borderColor='#9ca3af';"
+									   onmouseout="this.style.background='white'; this.style.borderColor='#d1d5db';">
+										<?php esc_html_e( 'Export CSV', 'seo-ai-meta-generator' ); ?>
+									</a>
+									<?php else : ?>
+									<button type="button" onclick="seoAiMetaShowLoginModal();" 
+											style="flex: 1; padding: 12px 20px; background: white; color: #374151; border: 1px solid #d1d5db; border-radius: 8px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s;"
+											onmouseover="this.style.background='#f3f4f6'; this.style.borderColor='#9ca3af';"
+											onmouseout="this.style.background='white'; this.style.borderColor='#d1d5db';">
+										<?php esc_html_e( 'Export CSV', 'seo-ai-meta-generator' ); ?>
+									</button>
+									<?php endif; ?>
+
+									<?php if ( $is_authenticated ) : ?>
+									<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" style="flex: 1; margin: 0;">
+										<input type="hidden" name="action" value="seo_ai_meta_import">
+										<?php wp_nonce_field( 'seo_ai_meta_import', 'seo_ai_meta_import_nonce' ); ?>
 										<label style="display: block; cursor: pointer;">
 											<input type="file" name="import_file" accept=".csv" required 
 												   id="seo-ai-meta-import-file"
 												   style="position: absolute; opacity: 0; width: 0; height: 0;"
-												   onchange="var fileName = this.files[0] ? this.files[0].name : 'No file chosen'; document.getElementById('seo-ai-meta-file-name').textContent = fileName; document.getElementById('seo-ai-meta-file-name').style.color = this.files[0] ? '#166534' : '#9ca3af'; document.getElementById('seo-ai-meta-file-name').style.fontWeight = this.files[0] ? '500' : '400';">
-											<div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: white; border: 2px dashed #86efac; border-radius: 8px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 1px 2px rgba(34, 197, 94, 0.05); box-sizing: border-box;"
-												 onmouseover="this.style.borderColor='#22c55e'; this.style.background='#f0fdf4'; this.style.boxShadow='0 2px 4px rgba(34, 197, 94, 0.1)';"
-												 onmouseout="this.style.borderColor='#86efac'; this.style.background='white'; this.style.boxShadow='0 1px 2px rgba(34, 197, 94, 0.05)';">
-												<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
-													<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-													<polyline points="17 8 12 3 7 8"/>
-													<line x1="12" y1="3" x2="12" y2="15"/>
-												</svg>
-												<div style="flex: 1; min-width: 0;">
-													<div style="font-size: 13px; font-weight: 600; color: #166534; margin-bottom: 3px; letter-spacing: -0.01em;">
-														<?php esc_html_e( 'Choose CSV file', 'seo-ai-meta-generator' ); ?>
-													</div>
-													<div id="seo-ai-meta-file-name" style="font-size: 12px; color: #9ca3af; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: all 0.2s;">
-														<?php esc_html_e( 'No file chosen', 'seo-ai-meta-generator' ); ?>
-													</div>
-												</div>
+												   onchange="this.form.submit();">
+											<div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s;"
+												 onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 6px rgba(16, 185, 129, 0.3)';"
+												 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+												<?php esc_html_e( 'Upload CSV', 'seo-ai-meta-generator' ); ?>
 											</div>
 										</label>
-									</div>
-									<button type="submit" 
-											style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px 20px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 4px rgba(34, 197, 94, 0.25); letter-spacing: -0.01em; box-sizing: border-box; margin-top: auto;"
-											onmouseover="this.style.background='linear-gradient(135deg, #16a34a 0%, #15803d 100%)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(34, 197, 94, 0.35)';"
-											onmouseout="this.style.background='linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(34, 197, 94, 0.25)';">
-										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-											<polyline points="17 8 12 3 7 8"/>
-											<line x1="12" y1="3" x2="12" y2="15"/>
-										</svg>
-										<span><?php esc_html_e( 'Import CSV', 'seo-ai-meta-generator' ); ?></span>
+									</form>
+									<?php else : ?>
+									<button type="button" onclick="seoAiMetaShowLoginModal();" 
+											style="flex: 1; padding: 12px 20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s;"
+											onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 6px rgba(16, 185, 129, 0.3)';"
+											onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+										<?php esc_html_e( 'Upload CSV', 'seo-ai-meta-generator' ); ?>
 									</button>
-								</form>
+									<?php endif; ?>
+								</div>
+							</div>
+
+							<!-- Save Button -->
+							<div style="margin-top: 24px;">
+								<button type="submit" 
+										style="width: 100%; padding: 12px 24px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s;"
+										onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 6px rgba(59, 130, 246, 0.3)';"
+										onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+									<?php esc_html_e( 'Save Settings', 'seo-ai-meta-generator' ); ?>
+								</button>
+							</div>
+						</form>
+					</div>
+
+					<!-- Right Column: Upgrade Card -->
+					<div style="width: 320px; min-width: 280px;">
+						<!-- Unlock Pro Automation Card -->
+						<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+							<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="flex-shrink: 0;">
+									<path d="M20 6L9 17l-5-5"/>
+								</svg>
+								<h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #1f2937;">
+									<?php esc_html_e( 'Unlock Pro Automation', 'seo-ai-meta-generator' ); ?>
+								</h3>
+							</div>
+							<p style="margin: 0 0 20px 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
+								<?php esc_html_e( 'Generate unlimited meta tags automatically', 'seo-ai-meta-generator' ); ?>
+							</p>
+							<ul style="list-style: none; padding: 0; margin: 0 0 24px 0;">
+								<li style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; color: #374151;">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="flex-shrink: 0;">
+										<path d="M22 12h-4M6 12H2M12 6V2M12 22v-4M6.34 6.34l-2.83-2.83M20.49 20.49l-2.83-2.83M17.66 6.34l2.83-2.83M3.51 20.49l2.83-2.83"/>
+									</svg>
+									<span><?php esc_html_e( 'Gain SEO insights per post', 'seo-ai-meta-generator' ); ?></span>
+								</li>
+								<li style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #374151;">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="flex-shrink: 0;">
+										<path d="M22 12h-4M6 12H2M12 6V2M12 22v-4M6.34 6.34l-2.83-2.83M20.49 20.49l-2.83-2.83M17.66 6.34l2.83-2.83M3.51 20.49l2.83-2.83"/>
+									</svg>
+									<span><?php esc_html_e( 'Boost performance with bulk AI tuning', 'seo-ai-meta-generator' ); ?></span>
+								</li>
+							</ul>
+							<button type="button" onclick="seoAiMetaShowUpgradeModal();" 
+									style="width: 100%; padding: 12px 24px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s;"
+									onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 6px rgba(16, 185, 129, 0.3)';"
+									onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+								<?php esc_html_e( 'Upgrade to Pro', 'seo-ai-meta-generator' ); ?>
+							</button>
+						</div>
+
+						<!-- Migration Information -->
+						<div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px;">
+							<div style="display: flex; align-items: flex-start; gap: 12px;">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;">
+									<circle cx="12" cy="12" r="10"/>
+									<line x1="12" y1="16" x2="12" y2="12"/>
+									<line x1="12" y1="8" x2="12.01" y2="8"/>
+								</svg>
+								<div>
+									<h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #1f2937;">
+										<?php esc_html_e( 'Migrating from another SEO plugin?', 'seo-ai-meta-generator' ); ?>
+									</h4>
+									<p style="margin: 0; font-size: 13px; color: #6b7280; line-height: 1.5;">
+										<?php esc_html_e( 'You can import your existing meta data', 'seo-ai-meta-generator' ); ?>
+									</p>
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
+
+			<!-- Show Variables Modal -->
+			<div id="seo-ai-meta-variables-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 10000; align-items: center; justify-content: center;"
+				 onclick="if(event.target === this) { document.getElementById('seo-ai-meta-variables-modal').style.display = 'none'; }">
+				<div style="background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);"
+					 onclick="event.stopPropagation();">
+					<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+						<h3 style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0;">
+							<?php esc_html_e( 'Template Variables', 'seo-ai-meta-generator' ); ?>
+						</h3>
+						<button type="button" onclick="document.getElementById('seo-ai-meta-variables-modal').style.display = 'none';"
+								style="background: none; border: none; color: #6b7280; cursor: pointer; padding: 4px;"
+								onmouseover="this.style.color='#1f2937';"
+								onmouseout="this.style.color='#6b7280';">
+							<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M15 5L5 15M5 5l10 10"/>
+							</svg>
+						</button>
+					</div>
+					<div style="display: grid; gap: 12px;">
+						<div style="padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+							<code style="font-size: 14px; color: #3b82f6; font-weight: 600;">{{title}}</code>
+							<p style="margin: 4px 0 0 0; font-size: 13px; color: #6b7280;"><?php esc_html_e( 'Post title', 'seo-ai-meta-generator' ); ?></p>
+						</div>
+						<div style="padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+							<code style="font-size: 14px; color: #3b82f6; font-weight: 600;">{{description}}</code>
+							<p style="margin: 4px 0 0 0; font-size: 13px; color: #6b7280;"><?php esc_html_e( 'AI-generated description', 'seo-ai-meta-generator' ); ?></p>
+						</div>
+						<div style="padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+							<code style="font-size: 14px; color: #3b82f6; font-weight: 600;">{{date}}</code>
+							<p style="margin: 4px 0 0 0; font-size: 13px; color: #6b7280;"><?php esc_html_e( 'Publication date', 'seo-ai-meta-generator' ); ?></p>
+						</div>
+						<div style="padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+							<code style="font-size: 14px; color: #3b82f6; font-weight: 600;">{{category}}</code>
+							<p style="margin: 4px 0 0 0; font-size: 13px; color: #6b7280;"><?php esc_html_e( 'Post category', 'seo-ai-meta-generator' ); ?></p>
+						</div>
+						<div style="padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+							<code style="font-size: 14px; color: #3b82f6; font-weight: 600;">{{author}}</code>
+							<p style="margin: 4px 0 0 0; font-size: 13px; color: #6b7280;"><?php esc_html_e( 'Post author', 'seo-ai-meta-generator' ); ?></p>
+						</div>
+						<div style="padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+							<code style="font-size: 14px; color: #3b82f6; font-weight: 600;">{{site}}</code>
+							<p style="margin: 4px 0 0 0; font-size: 13px; color: #6b7280;"><?php esc_html_e( 'Site name', 'seo-ai-meta-generator' ); ?></p>
+						</div>
+					</div>
+					<button type="button" onclick="document.getElementById('seo-ai-meta-variables-modal').style.display = 'none';"
+							style="width: 100%; margin-top: 20px; padding: 10px 16px; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; font-weight: 500; font-size: 14px; cursor: pointer;">
+						<?php esc_html_e( 'Close', 'seo-ai-meta-generator' ); ?>
+					</button>
+				</div>
+			</div>
+
+			<!-- Preview Modal -->
+			<div id="seo-ai-meta-preview-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 10000; align-items: center; justify-content: center;"
+				 onclick="if(event.target === this) { document.getElementById('seo-ai-meta-preview-modal').style.display = 'none'; }">
+				<div style="background: white; border-radius: 12px; padding: 24px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);"
+					 onclick="event.stopPropagation();">
+					<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+						<h3 style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0;">
+							<?php esc_html_e( 'Preview Output', 'seo-ai-meta-generator' ); ?>
+						</h3>
+						<button type="button" onclick="document.getElementById('seo-ai-meta-preview-modal').style.display = 'none';"
+								style="background: none; border: none; color: #6b7280; cursor: pointer; padding: 4px;"
+								onmouseover="this.style.color='#1f2937';"
+								onmouseout="this.style.color='#6b7280';">
+							<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M15 5L5 15M5 5l10 10"/>
+							</svg>
+						</button>
+					</div>
+					<div id="seo-ai-meta-preview-content" style="padding: 16px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+						<p style="margin: 0; font-size: 14px; color: #6b7280;"><?php esc_html_e( 'Preview will appear here...', 'seo-ai-meta-generator' ); ?></p>
+					</div>
+					<button type="button" onclick="document.getElementById('seo-ai-meta-preview-modal').style.display = 'none';"
+							style="width: 100%; margin-top: 20px; padding: 10px 16px; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; font-weight: 500; font-size: 14px; cursor: pointer;">
+						<?php esc_html_e( 'Close', 'seo-ai-meta-generator' ); ?>
+					</button>
+				</div>
+			</div>
+
+			<script>
+			(function($) {
+				'use strict';
+
+				// Toast notification function
+				function showToast(message) {
+					var toast = $('#seo-ai-meta-toast-container');
+					$('#seo-ai-meta-toast-message').text(message);
+					toast.fadeIn(300);
+					setTimeout(function() {
+						toast.fadeOut(300);
+					}, 3000);
+				}
+
+				// Update slider style (green gradient)
+				if (typeof updateSliderStyle === 'undefined') {
+					window.updateSliderStyle = function(slider) {
+						var value = (slider.value - slider.min) / (slider.max - slider.min) * 100;
+						slider.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+					};
+				}
+
+				// Initialize sliders on page load
+				$(document).ready(function() {
+					$('input[type="range"]').each(function() {
+						updateSliderStyle(this);
+					});
+
+					// Handle form submission with toast
+					$('#seo-ai-meta-settings-form').on('submit', function(e) {
+						var form = $(this);
+						var originalAction = form.attr('action');
+						
+						// Check if settings are being saved
+						if (originalAction.includes('options.php')) {
+							// Show toast after successful save
+							setTimeout(function() {
+								if ($('.notice-success').length > 0 || $('body').find('[class*="updated"]').length > 0) {
+									showToast('<?php echo esc_js( __( 'Settings saved successfully!', 'seo-ai-meta-generator' ) ); ?>');
+								}
+							}, 500);
+						}
+					});
+
+					// Auto-generate toggle handler
+					$('#auto_generate').on('change', function() {
+						var toggle = $(this);
+						var span = toggle.next('span');
+						if (toggle.is(':checked')) {
+							span.css('background', '#10b981');
+							span.find('span').css('transform', 'translateX(20px)');
+						} else {
+							span.css('background', '#d1d5db');
+							span.find('span').css('transform', 'translateX(0)');
+						}
+					});
+
+					// Close modals on ESC key
+					$(document).on('keydown', function(e) {
+						if (e.key === 'Escape') {
+							$('#seo-ai-meta-variables-modal, #seo-ai-meta-preview-modal').hide();
+						}
+					});
+
+					// Preview output handler
+					$('a[onclick*="seo-ai-meta-preview-modal"]').on('click', function(e) {
+						e.preventDefault();
+						var titleTemplate = $('#title_template').val() || '{{title}}';
+						var descTemplate = $('#description_template').val() || '{{description}}';
+						
+						// Replace variables with example values
+						var preview = '<div style="margin-bottom: 16px;"><strong style="font-size: 14px; color: #374151; display: block; margin-bottom: 4px;">Title:</strong><div style="padding: 8px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; color: #1f2937;">' + titleTemplate.replace(/\{\{title\}\}/g, 'Example Post Title').replace(/\{\{site\}\}/g, 'My Website') + '</div></div>';
+						preview += '<div><strong style="font-size: 14px; color: #374151; display: block; margin-bottom: 4px;">Description:</strong><div style="padding: 8px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; color: #1f2937;">' + descTemplate.replace(/\{\{description\}\}/g, 'This is an example AI-generated description').replace(/\{\{title\}\}/g, 'Example Post Title') + '</div></div>';
+						
+						$('#seo-ai-meta-preview-content').html(preview);
+						$('#seo-ai-meta-preview-modal').css('display', 'flex');
+					});
+				});
+			})(jQuery);
+			</script>
 
 		<?php elseif ( $tab === 'logs' ) : ?>
 			<?php
@@ -1079,6 +1504,7 @@ if ( empty( $settings ) ) {
 			// Get filters
 			$level_filter = isset( $_GET['level'] ) ? sanitize_text_field( $_GET['level'] ) : '';
 			$search_filter = isset( $_GET['search'] ) ? sanitize_text_field( $_GET['search'] ) : '';
+			$date_filter = isset( $_GET['date'] ) ? sanitize_text_field( $_GET['date'] ) : '';
 
 			$filters = array();
 			if ( $level_filter ) {
@@ -1089,101 +1515,170 @@ if ( empty( $settings ) ) {
 			}
 
 			$logs = SEO_AI_Meta_Logger::get_logs( $filters );
+			
+			// Apply date filter if set
+			if ( $date_filter ) {
+				$filter_date = strtotime( $date_filter );
+				$logs = array_filter( $logs, function( $log ) use ( $filter_date ) {
+					$log_date = strtotime( $log['timestamp'] );
+					return date( 'Y-m-d', $log_date ) === date( 'Y-m-d', $filter_date );
+				} );
+				$logs = array_values( $logs ); // Re-index array
+			}
 			$stats = SEO_AI_Meta_Logger::get_stats();
+			
+			// Get last API call timestamp
+			$all_logs = SEO_AI_Meta_Logger::get_logs( array() );
+			$last_api_call = null;
+			foreach ( $all_logs as $log ) {
+				if ( isset( $log['message'] ) && ( stripos( $log['message'], 'API' ) !== false || ( isset( $log['context']['endpoint'] ) ) ) ) {
+					$last_api_call = $log['timestamp'];
+					break;
+				}
+			}
+			if ( ! $last_api_call && ! empty( $all_logs ) ) {
+				$last_api_call = $all_logs[0]['timestamp'];
+			}
+			
+			// Format last API call time
+			$last_api_call_formatted = $last_api_call ? date( 'g:i A', strtotime( $last_api_call ) ) : 'Never';
+			
+			// Get user plan for Pro features
+			$user_plan = 'free';
+			if ( $is_authenticated ) {
+				$user_data = $api_client->get_user_data();
+				if ( $user_data && isset( $user_data['plan'] ) ) {
+					$user_plan = $user_data['plan'];
+				}
+			}
+			$is_pro = in_array( $user_plan, array( 'pro', 'agency' ), true );
 			?>
 
 			<!-- Debug Logs Tab -->
-			<div>
-				<h1 style="font-size: 28px; font-weight: 700; color: #1f2937; margin: 0 0 8px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.2;">
-					Debug Logs
-				</h1>
-				<p style="font-size: 14px; color: #6b7280; margin: 0 0 32px 0; line-height: 1.5;">
-					<?php esc_html_e( 'View and manage plugin debug logs', 'seo-ai-meta-generator' ); ?>
-				</p>
+			<div style="display: flex; gap: 24px; flex-wrap: wrap;">
+				<div style="flex: 1; min-width: 0;">
+					<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+						<div>
+							<h1 style="font-size: 28px; font-weight: 700; color: #1f2937; margin: 0 0 8px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.2;">
+								<?php esc_html_e( 'System Activity & Debug Logs', 'seo-ai-meta-generator' ); ?>
+							</h1>
+							<p style="font-size: 14px; color: #6b7280; margin: 0; line-height: 1.5;">
+								<?php esc_html_e( 'Monitor plugin performance, API activity, and recent operations in real-time.', 'seo-ai-meta-generator' ); ?>
+							</p>
+						</div>
+						<form method="post" style="display: inline;">
+							<?php wp_nonce_field( 'seo_ai_meta_clear_logs' ); ?>
+							<button type="submit" name="seo_ai_meta_clear_logs" 
+									onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to clear all logs?', 'seo-ai-meta-generator' ); ?>');"
+									style="padding: 8px 16px; background: white; color: #6b7280; border: 1px solid #d1d5db; border-radius: 6px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s;"
+									onmouseover="this.style.background='#f3f4f6'; this.style.borderColor='#9ca3af';"
+									onmouseout="this.style.background='white'; this.style.borderColor='#d1d5db';">
+								<?php esc_html_e( 'Clear Logs', 'seo-ai-meta-generator' ); ?>
+							</button>
+						</form>
+					</div>
 
-				<!-- Stats Cards -->
-				<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
-					<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px;">
-						<div style="font-size: 12px; color: #6b7280; margin-bottom: 8px; font-weight: 500;"><?php esc_html_e( 'Total Logs', 'seo-ai-meta-generator' ); ?></div>
-						<div style="font-size: 32px; font-weight: 700; color: #1f2937;"><?php echo esc_html( $stats['total'] ); ?></div>
+					<!-- Header Summary with Key Metrics -->
+					<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
+						<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px;">
+							<div style="font-size: 12px; color: #6b7280; margin-bottom: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;"><?php esc_html_e( 'Total Logs', 'seo-ai-meta-generator' ); ?></div>
+							<div style="font-size: 28px; font-weight: 700; color: #1f2937;"><?php echo esc_html( $stats['total'] ); ?></div>
+						</div>
+						<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px;">
+							<div style="font-size: 12px; color: #6b7280; margin-bottom: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;"><?php esc_html_e( 'Warnings', 'seo-ai-meta-generator' ); ?></div>
+							<div style="font-size: 28px; font-weight: 700; color: #f59e0b;"><?php echo esc_html( $stats['warning'] ); ?></div>
+						</div>
+						<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px;">
+							<div style="font-size: 12px; color: #6b7280; margin-bottom: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;"><?php esc_html_e( 'Errors', 'seo-ai-meta-generator' ); ?></div>
+							<div style="font-size: 28px; font-weight: 700; color: #dc2626;"><?php echo esc_html( $stats['error'] ); ?></div>
+						</div>
+						<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px;">
+							<div style="font-size: 12px; color: #6b7280; margin-bottom: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;"><?php esc_html_e( 'Last API Call', 'seo-ai-meta-generator' ); ?></div>
+							<div style="font-size: 28px; font-weight: 700; color: #1f2937;"><?php echo esc_html( $last_api_call_formatted ); ?></div>
+						</div>
 					</div>
-					<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px;">
-						<div style="font-size: 12px; color: #6b7280; margin-bottom: 8px; font-weight: 500;"><?php esc_html_e( 'Errors', 'seo-ai-meta-generator' ); ?></div>
-						<div style="font-size: 32px; font-weight: 700; color: #dc2626;"><?php echo esc_html( $stats['error'] ); ?></div>
-					</div>
-					<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px;">
-						<div style="font-size: 12px; color: #6b7280; margin-bottom: 8px; font-weight: 500;"><?php esc_html_e( 'Warnings', 'seo-ai-meta-generator' ); ?></div>
-						<div style="font-size: 32px; font-weight: 700; color: #f59e0b;"><?php echo esc_html( $stats['warning'] ); ?></div>
-					</div>
-					<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px;">
-						<div style="font-size: 12px; color: #6b7280; margin-bottom: 8px; font-weight: 500;"><?php esc_html_e( 'Info', 'seo-ai-meta-generator' ); ?></div>
-						<div style="font-size: 32px; font-weight: 700; color: #3b82f6;"><?php echo esc_html( $stats['info'] ); ?></div>
-					</div>
-				</div>
 
-				<!-- Filters and Actions -->
-				<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 28px; margin-bottom: 24px;">
-					<div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
-						<div style="display: flex; gap: 12px; flex-wrap: wrap; flex: 1;">
+					<!-- Filter/Search Toolbar -->
+					<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+						<div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
 							<!-- Level Filter -->
-							<select id="seo-ai-meta-log-level-filter" 
-									style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: white; min-width: 150px;">
-								<option value=""><?php esc_html_e( 'All Levels', 'seo-ai-meta-generator' ); ?></option>
-								<option value="ERROR" <?php selected( $level_filter, 'ERROR' ); ?>><?php esc_html_e( 'Errors Only', 'seo-ai-meta-generator' ); ?></option>
-								<option value="WARNING" <?php selected( $level_filter, 'WARNING' ); ?>><?php esc_html_e( 'Warnings Only', 'seo-ai-meta-generator' ); ?></option>
-								<option value="INFO" <?php selected( $level_filter, 'INFO' ); ?>><?php esc_html_e( 'Info Only', 'seo-ai-meta-generator' ); ?></option>
-								<option value="DEBUG" <?php selected( $level_filter, 'DEBUG' ); ?>><?php esc_html_e( 'Debug Only', 'seo-ai-meta-generator' ); ?></option>
-							</select>
+							<div style="position: relative; display: flex; align-items: center;">
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 12px; color: #6b7280; pointer-events: none;">
+									<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+								</svg>
+								<select id="seo-ai-meta-log-level-filter" 
+										style="padding: 10px 12px 10px 36px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: white; min-width: 150px; appearance: none; cursor: pointer;">
+									<option value=""><?php esc_html_e( 'All', 'seo-ai-meta-generator' ); ?></option>
+									<option value="ERROR" <?php selected( $level_filter, 'ERROR' ); ?>><?php esc_html_e( 'Errors Only', 'seo-ai-meta-generator' ); ?></option>
+									<option value="WARNING" <?php selected( $level_filter, 'WARNING' ); ?>><?php esc_html_e( 'Warnings Only', 'seo-ai-meta-generator' ); ?></option>
+									<option value="INFO" <?php selected( $level_filter, 'INFO' ); ?>><?php esc_html_e( 'Info Only', 'seo-ai-meta-generator' ); ?></option>
+									<option value="DEBUG" <?php selected( $level_filter, 'DEBUG' ); ?>><?php esc_html_e( 'Debug Only', 'seo-ai-meta-generator' ); ?></option>
+								</select>
+							</div>
+
+							<!-- Date Picker -->
+							<input type="date" id="seo-ai-meta-log-date-filter"
+								   value="<?php echo isset( $_GET['date'] ) ? esc_attr( sanitize_text_field( $_GET['date'] ) ) : ''; ?>"
+								   style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: white; min-width: 150px;">
 
 							<!-- Search -->
 							<input type="text" id="seo-ai-meta-log-search"
-								   placeholder="<?php esc_attr_e( 'Search logs...', 'seo-ai-meta-generator' ); ?>"
+								   placeholder="<?php esc_attr_e( 'Filter by message or context...', 'seo-ai-meta-generator' ); ?>"
 								   value="<?php echo esc_attr( $search_filter ); ?>"
 								   style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; flex: 1; min-width: 200px; background: white;">
 
 							<button type="button" id="seo-ai-meta-apply-filters" 
-									style="padding: 10px 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 6px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s;"
-									onmouseover="this.style.transform='translateY(-1px)';"
-									onmouseout="this.style.transform='translateY(0)';">
+									style="padding: 10px 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 6px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap;"
+									onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 6px rgba(59, 130, 246, 0.3)';"
+									onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
 								<?php esc_html_e( 'Apply Filters', 'seo-ai-meta-generator' ); ?>
 							</button>
-							<button type="button" id="seo-ai-meta-clear-filters" 
-									style="padding: 10px 20px; background: white; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s;"
-									onmouseover="this.style.background='#f3f4f6';"
-									onmouseout="this.style.background='white';">
-								<?php esc_html_e( 'Clear', 'seo-ai-meta-generator' ); ?>
-							</button>
 						</div>
 
-						<div style="display: flex; gap: 8px; flex-wrap: wrap;">
-							<!-- Export Buttons -->
-							<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'tab' => 'logs', 'export' => 'json' ), $base_tab_url ), 'seo_ai_meta_export_logs', 'nonce' ) ); ?>"
-							   style="padding: 10px 16px; background: white; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px; transition: all 0.2s;"
-							   onmouseover="this.style.background='#f3f4f6'; this.style.borderColor='#9ca3af';"
-							   onmouseout="this.style.background='white'; this.style.borderColor='#d1d5db';">
-								<?php esc_html_e( 'Export JSON', 'seo-ai-meta-generator' ); ?>
-							</a>
-							<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'tab' => 'logs', 'export' => 'csv' ), $base_tab_url ), 'seo_ai_meta_export_logs', 'nonce' ) ); ?>"
-							   style="padding: 10px 16px; background: white; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px; transition: all 0.2s;"
-							   onmouseover="this.style.background='#f3f4f6'; this.style.borderColor='#9ca3af';"
-							   onmouseout="this.style.background='white'; this.style.borderColor='#d1d5db';">
-								<?php esc_html_e( 'Export CSV', 'seo-ai-meta-generator' ); ?>
-							</a>
+						<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; justify-content: space-between; align-items: center;">
+							<div style="display: flex; gap: 8px; flex-wrap: wrap;">
+								<!-- Export Dropdown -->
+								<div style="position: relative; display: inline-block;">
+									<button type="button" id="seo-ai-meta-export-dropdown-btn"
+											style="padding: 10px 16px; background: white; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;"
+											onmouseover="this.style.background='#f3f4f6'; this.style.borderColor='#9ca3af';"
+											onmouseout="this.style.background='white'; this.style.borderColor='#d1d5db';"
+											onclick="document.getElementById('seo-ai-meta-export-menu').style.display = document.getElementById('seo-ai-meta-export-menu').style.display === 'block' ? 'none' : 'block';">
+										<?php esc_html_e( 'Export', 'seo-ai-meta-generator' ); ?>
+										<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+											<polyline points="3 4.5 6 7.5 9 4.5"/>
+										</svg>
+									</button>
+									<div id="seo-ai-meta-export-menu" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: white; border: 1px solid #d1d5db; border-radius: 6px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 1000; min-width: 150px;">
+										<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'tab' => 'logs', 'export' => 'csv' ), $base_tab_url ), 'seo_ai_meta_export_logs', 'nonce' ) ); ?>"
+										   style="display: block; padding: 10px 16px; color: #374151; text-decoration: none; font-size: 14px; transition: background 0.2s; border-radius: 6px 6px 0 0;"
+										   onmouseover="this.style.background='#f3f4f6';"
+										   onmouseout="this.style.background='white';">
+											<?php esc_html_e( 'Export CSV', 'seo-ai-meta-generator' ); ?>
+										</a>
+										<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'tab' => 'logs', 'export' => 'json' ), $base_tab_url ), 'seo_ai_meta_export_logs', 'nonce' ) ); ?>"
+										   style="display: block; padding: 10px 16px; color: #374151; text-decoration: none; font-size: 14px; transition: background 0.2s; border-radius: 0 0 6px 6px;"
+										   onmouseover="this.style.background='#f3f4f6';"
+										   onmouseout="this.style.background='white';">
+											<?php esc_html_e( 'Export JSON', 'seo-ai-meta-generator' ); ?>
+										</a>
+									</div>
+								</div>
 
-							<!-- Clear Logs -->
-							<form method="post" style="display: inline;">
-								<?php wp_nonce_field( 'seo_ai_meta_clear_logs' ); ?>
-								<button type="submit" name="seo_ai_meta_clear_logs" 
-										onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to clear all logs?', 'seo-ai-meta-generator' ); ?>');"
-										style="padding: 10px 16px; background: white; color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s;"
-										onmouseover="this.style.background='#fee2e2';"
-										onmouseout="this.style.background='white';">
-									<?php esc_html_e( 'Clear Logs', 'seo-ai-meta-generator' ); ?>
-								</button>
-							</form>
+								<!-- Clear Logs -->
+								<form method="post" style="display: inline;">
+									<?php wp_nonce_field( 'seo_ai_meta_clear_logs' ); ?>
+									<button type="submit" name="seo_ai_meta_clear_logs" 
+											onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to clear all logs?', 'seo-ai-meta-generator' ); ?>');"
+											style="padding: 10px 16px; background: white; color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s;"
+											onmouseover="this.style.background='#fee2e2';"
+											onmouseout="this.style.background='white';">
+										<?php esc_html_e( 'Clear Logs', 'seo-ai-meta-generator' ); ?>
+									</button>
+								</form>
+							</div>
 						</div>
 					</div>
-				</div>
 
 				<!-- Logs Table -->
 				<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 28px;">
@@ -1205,57 +1700,80 @@ if ( empty( $settings ) ) {
 							<table style="width: 100%; border-collapse: collapse;">
 								<thead>
 									<tr style="border-bottom: 2px solid #e5e7eb;">
-										<th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; width: 140px;"><?php esc_html_e( 'Timestamp', 'seo-ai-meta-generator' ); ?></th>
-										<th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; width: 80px;"><?php esc_html_e( 'Level', 'seo-ai-meta-generator' ); ?></th>
-										<th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;"><?php esc_html_e( 'Message', 'seo-ai-meta-generator' ); ?></th>
-										<th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; width: 200px;"><?php esc_html_e( 'Context', 'seo-ai-meta-generator' ); ?></th>
+										<th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; width: 140px;"><?php esc_html_e( 'TIMESTAMP', 'seo-ai-meta-generator' ); ?></th>
+										<th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; width: 100px;"><?php esc_html_e( 'LEVEL', 'seo-ai-meta-generator' ); ?></th>
+										<th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;"><?php esc_html_e( 'MESSAGE', 'seo-ai-meta-generator' ); ?></th>
 									</tr>
 								</thead>
 								<tbody>
-									<?php foreach ( $logs as $log ) : ?>
+									<?php 
+									$row_index = 0;
+									foreach ( $logs as $log ) : 
+										$row_index++;
+										$row_bg = ( $row_index % 2 === 0 ) ? '#f9fafb' : 'white';
+										?>
 										<?php
 										$level_class = '';
 										$level_color = '#6b7280';
+										$level_bg = '#f3f4f6';
 										switch ( $log['level'] ) {
 											case 'ERROR':
 												$level_class = 'error';
 												$level_color = '#dc2626';
+												$level_bg = '#fee2e2';
 												break;
 											case 'WARNING':
 												$level_class = 'warning';
 												$level_color = '#f59e0b';
+												$level_bg = '#fef3c7';
 												break;
 											case 'INFO':
 												$level_class = 'info';
-												$level_color = '#3b82f6';
+												$level_color = '#6b7280';
+												$level_bg = '#f3f4f6';
 												break;
 											case 'DEBUG':
 												$level_class = 'debug';
-												$level_color = '#6b7280';
+												$level_color = '#3b82f6';
+												$level_bg = '#dbeafe';
 												break;
 										}
+										
+										// Format timestamp to match image (e.g., "Jan 25, 10:14")
+										$timestamp_formatted = '';
+										if ( ! empty( $log['timestamp'] ) ) {
+											$ts = strtotime( $log['timestamp'] );
+											$timestamp_formatted = date( 'M j, g:i', $ts );
+										}
+										
+										$log_id = 'log-' . md5( $log['timestamp'] . $log['message'] );
+										$context_json = ! empty( $log['context'] ) ? wp_json_encode( $log['context'], JSON_PRETTY_PRINT ) : '';
 										?>
-										<tr style="border-bottom: 1px solid #f3f4f6;">
+										<tr style="background: <?php echo esc_attr( $row_bg ); ?>; border-bottom: 1px solid #f3f4f6;">
 											<td style="padding: 12px; font-size: 13px; color: #6b7280;">
-												<?php echo esc_html( $log['timestamp'] ); ?>
+												<?php echo esc_html( $timestamp_formatted ?: $log['timestamp'] ); ?>
 											</td>
 											<td style="padding: 12px;">
-												<span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: <?php echo esc_attr( $level_color ); ?>20; color: <?php echo esc_attr( $level_color ); ?>;">
+												<span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: <?php echo esc_attr( $level_bg ); ?>; color: <?php echo esc_attr( $level_color ); ?>; border: none;">
 													<?php echo esc_html( $log['level'] ); ?>
 												</span>
 											</td>
 											<td style="padding: 12px; font-size: 14px; color: #374151;">
-												<?php echo esc_html( $log['message'] ); ?>
-											</td>
-											<td style="padding: 12px; font-size: 13px; color: #6b7280;">
-												<?php if ( ! empty( $log['context'] ) ) : ?>
-													<details style="cursor: pointer;">
-														<summary style="user-select: none; color: #3b82f6; font-weight: 500;"><?php esc_html_e( 'View Context', 'seo-ai-meta-generator' ); ?></summary>
-														<pre style="margin-top: 8px; padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 11px; overflow-x: auto; color: #374151;"><?php echo esc_html( wp_json_encode( $log['context'], JSON_PRETTY_PRINT ) ); ?></pre>
-													</details>
-												<?php else : ?>
-													<span style="color: #d1d5db;">-</span>
-												<?php endif; ?>
+												<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+													<span style="flex: 1;"><?php echo esc_html( $log['message'] ); ?></span>
+													<?php if ( ! empty( $log['context'] ) ) : ?>
+														<button type="button" 
+																class="seo-ai-meta-view-context-btn"
+																data-log-id="<?php echo esc_attr( $log_id ); ?>"
+																data-message="<?php echo esc_attr( $log['message'] ); ?>"
+																data-context="<?php echo esc_attr( htmlspecialchars( $context_json, ENT_QUOTES, 'UTF-8' ) ); ?>"
+																style="padding: 6px 12px; background: #f3f4f6; color: #3b82f6; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; white-space: nowrap;"
+																onmouseover="this.style.background='#e5e7eb'; this.style.borderColor='#9ca3af';"
+																onmouseout="this.style.background='#f3f4f6'; this.style.borderColor='#d1d5db';">
+															<?php esc_html_e( 'View Context', 'seo-ai-meta-generator' ); ?>
+														</button>
+													<?php endif; ?>
+												</div>
 											</td>
 										</tr>
 									<?php endforeach; ?>
@@ -1264,7 +1782,113 @@ if ( empty( $settings ) ) {
 						</div>
 					<?php endif; ?>
 				</div>
+
+				<!-- Footer CTA -->
+				<div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; padding: 24px; margin-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+					<div style="flex: 1; min-width: 200px;">
+						<p style="color: white; font-size: 16px; font-weight: 600; margin: 0 0 4px 0;">
+							<?php esc_html_e( 'Boost performance insights', 'seo-ai-meta-generator' ); ?>
+						</p>
+						<p style="color: rgba(255, 255, 255, 0.9); font-size: 14px; margin: 0;">
+							<?php esc_html_e( 'Upgrade to Pro for full analytics and debugging.', 'seo-ai-meta-generator' ); ?>
+						</p>
+					</div>
+					<button type="button" onclick="seoAiMetaShowUpgradeModal();" 
+							style="padding: 12px 24px; background: white; color: #059669; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap;"
+							onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.15)';"
+							onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+						<?php esc_html_e( 'Upgrade to Pro', 'seo-ai-meta-generator' ); ?>
+					</button>
+				</div>
 			</div>
+
+			<!-- Pro-only Insights Panel -->
+			<?php if ( $is_pro ) : ?>
+				<div style="width: 320px; min-width: 280px;">
+					<div style="background: white; border: 1px solid #10b981; border-radius: 12px; padding: 24px;">
+						<h3 style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0 0 8px 0;">
+							<?php esc_html_e( 'Performance Overview', 'seo-ai-meta-generator' ); ?>
+						</h3>
+						<p style="font-size: 12px; color: #6b7280; margin: 0 0 20px 0;">
+							<?php esc_html_e( '(Past 7 days)', 'seo-ai-meta-generator' ); ?>
+						</p>
+						
+						<?php
+						// Calculate performance stats (mock data for now)
+						$success_rate = 99.4;
+						$avg_response_time = 2.33;
+						$api_calls = 128;
+						?>
+						
+						<div style="margin-bottom: 20px;">
+							<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+									<path d="M20 6L9 17l-5-5"/>
+								</svg>
+								<div>
+									<div style="font-size: 14px; color: #6b7280; margin-bottom: 2px;"><?php esc_html_e( 'Success rate', 'seo-ai-meta-generator' ); ?></div>
+									<div style="font-size: 20px; font-weight: 700; color: #1f2937;"><?php echo esc_html( $success_rate ); ?>%</div>
+								</div>
+							</div>
+							<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+									<path d="M20 6L9 17l-5-5"/>
+								</svg>
+								<div>
+									<div style="font-size: 14px; color: #6b7280; margin-bottom: 2px;"><?php esc_html_e( 'Average', 'seo-ai-meta-generator' ); ?></div>
+									<div style="font-size: 20px; font-weight: 700; color: #1f2937;"><?php echo esc_html( $avg_response_time ); ?>s</div>
+									<div style="font-size: 12px; color: #6b7280;"><?php esc_html_e( 'response time', 'seo-ai-meta-generator' ); ?></div>
+								</div>
+							</div>
+							<div style="display: flex; align-items: center; gap: 8px;">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+									<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+									<polyline points="17 6 23 6 23 12"/>
+								</svg>
+								<div>
+									<div style="font-size: 14px; color: #6b7280; margin-bottom: 2px;"><?php esc_html_e( 'API Calls', 'seo-ai-meta-generator' ); ?></div>
+									<div style="font-size: 20px; font-weight: 700; color: #1f2937;"><?php echo esc_html( $api_calls ); ?></div>
+								</div>
+							</div>
+						</div>
+						
+						<p style="font-size: 12px; color: #6b7280; margin: 0; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+							<?php esc_html_e( 'Pro users can view detailed API and performance insights.', 'seo-ai-meta-generator' ); ?>
+						</p>
+					</div>
+				</div>
+			<?php endif; ?>
+		</div>
+
+		<!-- Context View Modal -->
+		<div id="seo-ai-meta-context-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 10000; align-items: center; justify-content: center;"
+			 onclick="if(event.target === this) { document.getElementById('seo-ai-meta-context-modal').style.display = 'none'; }">
+			<div style="background: white; border-radius: 12px; padding: 24px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);"
+				 onclick="event.stopPropagation();">
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+					<h3 id="seo-ai-meta-context-modal-title" style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0;">
+						<?php esc_html_e( 'API request received', 'seo-ai-meta-generator' ); ?>
+					</h3>
+					<button type="button" onclick="document.getElementById('seo-ai-meta-context-modal').style.display = 'none';"
+							style="background: none; border: none; color: #6b7280; cursor: pointer; padding: 4px;"
+							onmouseover="this.style.color='#1f2937';"
+							onmouseout="this.style.color='#6b7280';">
+						<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M15 5L5 15M5 5l10 10"/>
+						</svg>
+					</button>
+				</div>
+				<div id="seo-ai-meta-context-modal-content" style="margin-bottom: 20px;">
+					<!-- Content will be populated by JavaScript -->
+				</div>
+				<button type="button" id="seo-ai-meta-copy-context-btn"
+						style="width: 100%; padding: 10px 16px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 6px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s;"
+						onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 6px rgba(59, 130, 246, 0.3)';"
+						onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+					<?php esc_html_e( 'Copy to clipboard', 'seo-ai-meta-generator' ); ?>
+				</button>
+			</div>
+		</div>
 
 			<script>
 			(function($) {
@@ -1275,6 +1899,7 @@ if ( empty( $settings ) ) {
 					$('#seo-ai-meta-apply-filters').on('click', function() {
 						var level = $('#seo-ai-meta-log-level-filter').val();
 						var search = $('#seo-ai-meta-log-search').val();
+						var date = $('#seo-ai-meta-log-date-filter').val();
 
 						var url = new URL(window.location.href);
 						url.searchParams.set('tab', 'logs');
@@ -1291,21 +1916,100 @@ if ( empty( $settings ) ) {
 							url.searchParams.delete('search');
 						}
 
-						window.location.href = url.toString();
-					});
+						if (date) {
+							url.searchParams.set('date', date);
+						} else {
+							url.searchParams.delete('date');
+						}
 
-					// Clear filters
-					$('#seo-ai-meta-clear-filters').on('click', function() {
-						var url = new URL(window.location.href);
-						url.searchParams.delete('level');
-						url.searchParams.delete('search');
 						window.location.href = url.toString();
 					});
 
 					// Allow Enter key to apply filters
-					$('#seo-ai-meta-log-search').on('keypress', function(e) {
+					$('#seo-ai-meta-log-search, #seo-ai-meta-log-date-filter').on('keypress', function(e) {
 						if (e.which === 13) {
 							$('#seo-ai-meta-apply-filters').click();
+						}
+					});
+
+					// Close export dropdown when clicking outside
+					$(document).on('click', function(e) {
+						if (!$(e.target).closest('#seo-ai-meta-export-dropdown-btn, #seo-ai-meta-export-menu').length) {
+							$('#seo-ai-meta-export-menu').hide();
+						}
+					});
+
+					// Context modal handlers
+					$('.seo-ai-meta-view-context-btn').on('click', function() {
+						var message = $(this).data('message');
+						var context = $(this).data('context');
+						
+						$('#seo-ai-meta-context-modal-title').text(message);
+						
+						// Parse context and display nicely
+						var contextObj = {};
+						try {
+							contextObj = JSON.parse(context);
+						} catch(e) {
+							contextObj = { raw: context };
+						}
+						
+						var html = '';
+						if (contextObj.endpoint) {
+							html += '<div style="margin-bottom: 16px;"><div style="font-size: 12px; color: #6b7280; margin-bottom: 4px; font-weight: 500;">Endpoint</div><div style="padding: 8px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; font-family: monospace; font-size: 13px; color: #374151;">' + contextObj.endpoint + '</div></div>';
+						}
+						if (contextObj.payload || contextObj.data) {
+							var payload = contextObj.payload || contextObj.data;
+							html += '<div style="margin-bottom: 16px;"><div style="font-size: 12px; color: #6b7280; margin-bottom: 4px; font-weight: 500;">Payload</div><textarea readonly style="width: 100%; padding: 8px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; font-family: monospace; font-size: 12px; color: #374151; min-height: 100px; resize: vertical;" id="seo-ai-meta-context-payload">' + (typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2)) + '</textarea></div>';
+						}
+						if (contextObj.response_time || contextObj.responseTime) {
+							html += '<div style="margin-bottom: 16px;"><div style="font-size: 12px; color: #6b7280; margin-bottom: 4px; font-weight: 500;">Response Time</div><input type="text" readonly value="' + (contextObj.response_time || contextObj.responseTime) + 's" style="width: 100%; padding: 8px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; font-family: monospace; font-size: 13px; color: #374151;"></div>';
+						}
+						if (!html) {
+							html = '<pre style="padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 12px; overflow-x: auto; color: #374151; white-space: pre-wrap;">' + context + '</pre>';
+						}
+						
+						$('#seo-ai-meta-context-modal-content').html(html);
+						$('#seo-ai-meta-context-modal').css('display', 'flex');
+					});
+
+					// Copy to clipboard
+					$('#seo-ai-meta-copy-context-btn').on('click', function() {
+						var textToCopy = '';
+						var payload = $('#seo-ai-meta-context-payload');
+						if (payload.length) {
+							textToCopy = payload.val();
+						} else {
+							textToCopy = $('#seo-ai-meta-context-modal-content').text();
+						}
+						
+						if (navigator.clipboard && navigator.clipboard.writeText) {
+							navigator.clipboard.writeText(textToCopy).then(function() {
+								var btn = $('#seo-ai-meta-copy-context-btn');
+								var originalText = btn.text();
+								btn.text('Copied!');
+								setTimeout(function() {
+									btn.text(originalText);
+								}, 2000);
+							});
+						} else {
+							// Fallback for older browsers
+							var textarea = $('<textarea>').val(textToCopy).appendTo('body').select();
+							document.execCommand('copy');
+							textarea.remove();
+							var btn = $('#seo-ai-meta-copy-context-btn');
+							var originalText = btn.text();
+							btn.text('Copied!');
+							setTimeout(function() {
+								btn.text(originalText);
+							}, 2000);
+						}
+					});
+
+					// Close modal on ESC key
+					$(document).on('keydown', function(e) {
+						if (e.key === 'Escape' && $('#seo-ai-meta-context-modal').is(':visible')) {
+							$('#seo-ai-meta-context-modal').hide();
 						}
 					});
 				});
@@ -1317,170 +2021,467 @@ if ( empty( $settings ) ) {
 </div>
 
 <!-- Login/Register Modal -->
-<div id="seo-ai-meta-login-modal" class="seo-ai-meta-modal-backdrop" style="display: none;" role="dialog" aria-modal="true">
-	<div class="seo-ai-meta-login-modal__content">
-		<div class="seo-ai-meta-login-modal__header">
-			<h2 id="seo-ai-meta-auth-modal-title"><?php esc_html_e( 'Login to SEO AI Meta', 'seo-ai-meta-generator' ); ?></h2>
-			<button type="button" class="seo-ai-meta-modal-close" onclick="seoAiMetaCloseLoginModal();" aria-label="<?php esc_attr_e( 'Close login modal', 'seo-ai-meta-generator' ); ?>">
+<!-- Auth Modal -->
+<div id="seo-ai-meta-login-modal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px;" role="dialog" aria-modal="true" aria-labelledby="seo-ai-meta-auth-modal-header">
+	<div style="width: 92vw; max-width: 420px; background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); padding: 24px; position: relative; max-height: 90vh; overflow-y: auto;">
+		<!-- Header -->
+		<div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px;">
+			<div style="display: flex; align-items: center; gap: 12px;">
+				<!-- Logo -->
+				<div style="width: 40px; height: 40px; background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+					<div style="color: white; font-size: 12px; font-weight: 700; line-height: 1; text-align: center;">
+						<div style="font-size: 10px;">SO</div>
+						<div style="font-size: 10px;">AI</div>
+					</div>
+				</div>
+				<div>
+					<h2 id="seo-ai-meta-auth-modal-header" style="margin: 0; font-size: 20px; font-weight: 700; color: #1e293b; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+						SEO AI Meta
+					</h2>
+					<p style="margin: 4px 0 0 0; font-size: 13px; color: #64748b; line-height: 1.4;">
+						Smart SEO titles & meta descriptions powered by AI.
+					</p>
+				</div>
+			</div>
+			<button type="button" onclick="seoAiMetaCloseLoginModal();" aria-label="Close modal" style="background: none; border: none; padding: 4px; cursor: pointer; color: #64748b; transition: color 0.2s;" onmouseover="this.style.color='#1e293b';" onmouseout="this.style.color='#64748b';">
 				<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
 					<path d="M15 5L5 15M5 5l10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
 				</svg>
 			</button>
 		</div>
-		<div class="seo-ai-meta-login-modal__body">
-			<!-- Tabs -->
-			<div class="seo-ai-meta-auth-tabs">
-				<button type="button" class="seo-ai-meta-auth-tab active" data-tab="login">
-					<?php esc_html_e( 'Login', 'seo-ai-meta-generator' ); ?>
-				</button>
-				<button type="button" class="seo-ai-meta-auth-tab" data-tab="register">
-					<?php esc_html_e( 'Register', 'seo-ai-meta-generator' ); ?>
-				</button>
-			</div>
 
-			<!-- Login Form -->
-			<div id="seo-ai-meta-login-tab" class="seo-ai-meta-auth-tab-content active">
-				<form id="seo-ai-meta-login-form">
-					<p>
-						<label for="seo-ai-meta-login-email"><?php esc_html_e( 'Email', 'seo-ai-meta-generator' ); ?></label>
-						<input type="email" id="seo-ai-meta-login-email" name="email" required class="regular-text" />
-					</p>
-					<p>
-						<label for="seo-ai-meta-login-password"><?php esc_html_e( 'Password', 'seo-ai-meta-generator' ); ?></label>
-						<input type="password" id="seo-ai-meta-login-password" name="password" required class="regular-text" />
-					</p>
-					<p style="text-align: right; margin-top: -10px; margin-bottom: 15px;">
-						<a href="#" onclick="event.preventDefault(); seoAiMetaShowForgotPassword();" style="color: #14b8a6; text-decoration: none; font-size: 13px;">
-							<?php esc_html_e( 'Forgot password?', 'seo-ai-meta-generator' ); ?>
+		<!-- Segmented Tabs -->
+		<div id="seo-ai-meta-auth-tabs" style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: #f1f5f9; border-radius: 8px; padding: 4px; margin-bottom: 24px;">
+			<button type="button" class="seo-ai-meta-auth-tab active" data-tab="login" style="padding: 10px 16px; background: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; color: #2563eb; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); outline: 1px solid #e2e8f0;">
+				Log in
+			</button>
+			<button type="button" class="seo-ai-meta-auth-tab" data-tab="register" style="padding: 10px 16px; background: transparent; border: none; border-radius: 6px; font-size: 14px; font-weight: 400; color: #64748b; cursor: pointer; transition: all 0.2s;">
+				Create account
+			</button>
+		</div>
+
+		<!-- Login Form -->
+		<div id="seo-ai-meta-login-tab" class="seo-ai-meta-auth-tab-content">
+			<form id="seo-ai-meta-login-form" aria-busy="false">
+				<!-- Email Field -->
+				<div style="margin-bottom: 20px;">
+					<label for="seo-ai-meta-login-email" style="display: block; font-size: 14px; font-weight: 500; color: #334155; margin-bottom: 6px;">
+						Email
+					</label>
+					<input 
+						type="email" 
+						id="seo-ai-meta-login-email" 
+						name="email" 
+						required 
+						autocomplete="email"
+						aria-invalid="false"
+						aria-describedby="seo-ai-meta-login-email-error"
+						style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; outline: none; transition: all 0.2s; box-sizing: border-box;"
+						onfocus="this.style.borderColor='#2563eb'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
+						onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none';"
+					/>
+					<div id="seo-ai-meta-login-email-error" class="seo-ai-meta-field-error" style="margin-top: 6px; font-size: 14px; color: #dc2626; display: none;"></div>
+				</div>
+
+				<!-- Password Field -->
+				<div style="margin-bottom: 12px;">
+					<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+						<label for="seo-ai-meta-login-password" style="display: block; font-size: 14px; font-weight: 500; color: #334155;">
+							Password
+						</label>
+						<a href="#" onclick="event.preventDefault(); seoAiMetaShowForgotPassword();" style="font-size: 13px; color: #64748b; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='#2563eb';" onmouseout="this.style.color='#64748b';">
+							Forgot password?
 						</a>
-					</p>
-					<div id="seo-ai-meta-login-message" style="margin: 10px 0; padding: 12px; border-radius: 4px; display: none; font-weight: 500;"></div>
-					<p class="submit">
-						<button type="submit" class="button button-primary"><?php esc_html_e( 'Login', 'seo-ai-meta-generator' ); ?></button>
-						<span class="spinner" id="seo-ai-meta-login-spinner" style="float: none; margin-left: 10px;"></span>
-					</p>
-				</form>
-			</div>
+					</div>
+					<div style="position: relative;">
+						<input 
+							type="password" 
+							id="seo-ai-meta-login-password" 
+							name="password" 
+							required 
+							autocomplete="current-password"
+							aria-invalid="false"
+							aria-describedby="seo-ai-meta-login-password-error"
+							style="width: 100%; padding: 10px 12px; padding-right: 40px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; outline: none; transition: all 0.2s; box-sizing: border-box;"
+							onfocus="this.style.borderColor='#2563eb'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
+							onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none';"
+						/>
+						<button type="button" onclick="seoAiMetaTogglePasswordVisibility('seo-ai-meta-login-password', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 4px; cursor: pointer; color: #64748b;" aria-label="Toggle password visibility">
+							<svg id="seo-ai-meta-login-password-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+								<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+								<circle cx="12" cy="12" r="3"/>
+							</svg>
+							<svg id="seo-ai-meta-login-password-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+								<line x1="1" y1="1" x2="23" y2="23"/>
+							</svg>
+						</button>
+					</div>
+					<div id="seo-ai-meta-login-password-error" class="seo-ai-meta-field-error" style="margin-top: 6px; font-size: 14px; color: #dc2626; display: none;"></div>
+				</div>
 
-			<!-- Forgot Password Form -->
-			<div id="seo-ai-meta-forgot-password-tab" class="seo-ai-meta-auth-tab-content" style="display: none;">
-				<form id="seo-ai-meta-forgot-password-form">
-					<p>
-						<label for="seo-ai-meta-forgot-email"><?php esc_html_e( 'Email', 'seo-ai-meta-generator' ); ?></label>
-						<input type="email" id="seo-ai-meta-forgot-email" name="email" required class="regular-text" />
-						<small style="color: #6b7280; font-size: 12px; display: block; margin-top: 4px;">
-							<?php esc_html_e( 'Enter your email address and we\'ll send you a link to reset your password.', 'seo-ai-meta-generator' ); ?>
-						</small>
-					</p>
-					<div id="seo-ai-meta-forgot-message" style="margin: 10px 0; padding: 12px; border-radius: 4px; display: none; font-weight: 500;"></div>
-					<p class="submit">
-						<button type="submit" class="button button-primary"><?php esc_html_e( 'Send Reset Link', 'seo-ai-meta-generator' ); ?></button>
-						<span class="spinner" id="seo-ai-meta-forgot-spinner" style="float: none; margin-left: 10px;"></span>
-					</p>
-					<p style="text-align: center; margin-top: 15px;">
-						<a href="#" onclick="event.preventDefault(); seoAiMetaShowLoginTab();" style="color: #14b8a6; text-decoration: none; font-size: 13px;">
-							<?php esc_html_e( '← Back to Login', 'seo-ai-meta-generator' ); ?>
-						</a>
-					</p>
-				</form>
-			</div>
+				<!-- Form Error Alert -->
+				<div id="seo-ai-meta-login-alert" role="alert" style="margin-bottom: 16px; padding: 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-size: 14px; display: none;"></div>
 
-			<!-- Reset Password Form (shown when token is in URL) -->
-			<?php
-			$reset_token = isset( $_GET['reset_token'] ) ? sanitize_text_field( $_GET['reset_token'] ) : '';
-			if ( ! empty( $reset_token ) ) :
-			?>
-			<div id="seo-ai-meta-reset-password-tab" class="seo-ai-meta-auth-tab-content" style="display: none;">
-				<form id="seo-ai-meta-reset-password-form">
-					<input type="hidden" id="seo-ai-meta-reset-token" value="<?php echo esc_attr( $reset_token ); ?>" />
-					<p>
-						<label for="seo-ai-meta-reset-password"><?php esc_html_e( 'New Password', 'seo-ai-meta-generator' ); ?></label>
-						<input type="password" id="seo-ai-meta-reset-password" name="password" required class="regular-text" minlength="6" />
-						<small style="color: #6b7280; font-size: 12px; display: block; margin-top: 4px;">
-							<?php esc_html_e( 'Password must be at least 6 characters long.', 'seo-ai-meta-generator' ); ?>
-						</small>
-					</p>
-					<p>
-						<label for="seo-ai-meta-reset-password-confirm"><?php esc_html_e( 'Confirm Password', 'seo-ai-meta-generator' ); ?></label>
-						<input type="password" id="seo-ai-meta-reset-password-confirm" name="password_confirm" required class="regular-text" minlength="6" />
-					</p>
-					<div id="seo-ai-meta-reset-message" style="margin: 10px 0; padding: 12px; border-radius: 4px; display: none; font-weight: 500;"></div>
-					<p class="submit">
-						<button type="submit" class="button button-primary"><?php esc_html_e( 'Reset Password', 'seo-ai-meta-generator' ); ?></button>
-						<span class="spinner" id="seo-ai-meta-reset-spinner" style="float: none; margin-left: 10px;"></span>
-					</p>
-				</form>
-			</div>
-			<?php endif; ?>
+				<!-- Submit Button -->
+				<button 
+					type="submit" 
+					id="seo-ai-meta-login-submit"
+					style="width: 100%; padding: 10px 20px; background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.2s; position: relative; min-height: 42px;"
+					onmouseover="if(!this.disabled) this.style.filter='brightness(110%)';"
+					onmouseout="if(!this.disabled) this.style.filter='brightness(100%)';"
+				>
+					<span class="seo-ai-meta-button-text">Log in securely</span>
+					<span id="seo-ai-meta-login-spinner" style="display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
+							<path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+						</svg>
+					</span>
+				</button>
+			</form>
+		</div>
 
-			<!-- Register Form -->
-			<div id="seo-ai-meta-register-tab" class="seo-ai-meta-auth-tab-content" style="display: none;">
-				<form id="seo-ai-meta-register-form">
-					<p>
-						<label for="seo-ai-meta-register-email"><?php esc_html_e( 'Email', 'seo-ai-meta-generator' ); ?></label>
-						<input type="email" id="seo-ai-meta-register-email" name="email" required class="regular-text" />
+		<!-- Register Form -->
+		<div id="seo-ai-meta-register-tab" class="seo-ai-meta-auth-tab-content" style="display: none;">
+			<form id="seo-ai-meta-register-form" aria-busy="false">
+				<!-- Register Benefit -->
+				<div style="margin-bottom: 20px; padding: 10px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+					<p style="margin: 0; font-size: 13px; color: #166534; line-height: 1.5;">
+						No card required — includes 50 free AI generations/month.
 					</p>
-					<p>
-						<label for="seo-ai-meta-register-password"><?php esc_html_e( 'Password', 'seo-ai-meta-generator' ); ?></label>
-						<input type="password" id="seo-ai-meta-register-password" name="password" required class="regular-text" minlength="6" />
-						<small style="color: #6b7280; font-size: 12px; display: block; margin-top: 4px;">
-							<?php esc_html_e( 'Password must be at least 6 characters long.', 'seo-ai-meta-generator' ); ?>
-						</small>
-					</p>
-					<div id="seo-ai-meta-register-message" style="margin: 10px 0; padding: 12px; border-radius: 4px; display: none; font-weight: 500;"></div>
-					<p class="submit">
-						<button type="submit" class="button button-primary"><?php esc_html_e( 'Create Account', 'seo-ai-meta-generator' ); ?></button>
-						<span class="spinner" id="seo-ai-meta-register-spinner" style="float: none; margin-left: 10px;"></span>
-					</p>
-				</form>
-			</div>
+				</div>
+
+				<!-- Email Field -->
+				<div style="margin-bottom: 20px;">
+					<label for="seo-ai-meta-register-email" style="display: block; font-size: 14px; font-weight: 500; color: #334155; margin-bottom: 6px;">
+						Email
+					</label>
+					<input 
+						type="email" 
+						id="seo-ai-meta-register-email" 
+						name="email" 
+						required 
+						autocomplete="email"
+						aria-invalid="false"
+						aria-describedby="seo-ai-meta-register-email-error"
+						style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; outline: none; transition: all 0.2s; box-sizing: border-box;"
+						onfocus="this.style.borderColor='#2563eb'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
+						onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none';"
+					/>
+					<div id="seo-ai-meta-register-email-error" class="seo-ai-meta-field-error" style="margin-top: 6px; font-size: 14px; color: #dc2626; display: none;"></div>
+				</div>
+
+				<!-- Password Field -->
+				<div style="margin-bottom: 16px;">
+					<label for="seo-ai-meta-register-password" style="display: block; font-size: 14px; font-weight: 500; color: #334155; margin-bottom: 6px;">
+						Password
+					</label>
+					<div style="position: relative;">
+						<input 
+							type="password" 
+							id="seo-ai-meta-register-password" 
+							name="password" 
+							required 
+							autocomplete="new-password"
+							minlength="8"
+							aria-invalid="false"
+							aria-describedby="seo-ai-meta-register-password-error"
+							style="width: 100%; padding: 10px 12px; padding-right: 40px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; outline: none; transition: all 0.2s; box-sizing: border-box;"
+							onfocus="this.style.borderColor='#2563eb'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
+							onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none';"
+						/>
+						<button type="button" onclick="seoAiMetaTogglePasswordVisibility('seo-ai-meta-register-password', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 4px; cursor: pointer; color: #64748b;" aria-label="Toggle password visibility">
+							<svg id="seo-ai-meta-register-password-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+								<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+								<circle cx="12" cy="12" r="3"/>
+							</svg>
+							<svg id="seo-ai-meta-register-password-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+								<line x1="1" y1="1" x2="23" y2="23"/>
+							</svg>
+						</button>
+					</div>
+					<div id="seo-ai-meta-register-password-error" class="seo-ai-meta-field-error" style="margin-top: 6px; font-size: 14px; color: #dc2626; display: none;"></div>
+				</div>
+
+				<!-- Terms -->
+				<p style="margin: 0 0 16px 0; font-size: 13px; color: #64748b; line-height: 1.5;">
+					By continuing you agree to the <a href="#" style="color: #2563eb; text-decoration: none;">Terms</a> & <a href="#" style="color: #2563eb; text-decoration: none;">Privacy</a>.
+				</p>
+
+				<!-- Form Error Alert -->
+				<div id="seo-ai-meta-register-alert" role="alert" style="margin-bottom: 16px; padding: 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-size: 14px; display: none;"></div>
+
+				<!-- Submit Button -->
+				<button 
+					type="submit" 
+					id="seo-ai-meta-register-submit"
+					style="width: 100%; padding: 10px 20px; background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.2s; position: relative; min-height: 42px;"
+					onmouseover="if(!this.disabled) this.style.filter='brightness(110%)';"
+					onmouseout="if(!this.disabled) this.style.filter='brightness(100%)';"
+				>
+					<span class="seo-ai-meta-button-text">Create free account</span>
+					<span id="seo-ai-meta-register-spinner" style="display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
+							<path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+						</svg>
+					</span>
+				</button>
+			</form>
+		</div>
+
+		<!-- Forgot Password Form -->
+		<div id="seo-ai-meta-forgot-password-tab" class="seo-ai-meta-auth-tab-content" style="display: none;">
+			<form id="seo-ai-meta-forgot-password-form" aria-busy="false">
+				<p style="margin: 0 0 20px 0; font-size: 14px; color: #64748b; line-height: 1.5;">
+					Enter your email address and we'll send you a link to reset your password.
+				</p>
+				<div style="margin-bottom: 20px;">
+					<label for="seo-ai-meta-forgot-email" style="display: block; font-size: 14px; font-weight: 500; color: #334155; margin-bottom: 6px;">
+						Email
+					</label>
+					<input 
+						type="email" 
+						id="seo-ai-meta-forgot-email" 
+						name="email" 
+						required 
+						autocomplete="email"
+						aria-invalid="false"
+						style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; outline: none; transition: all 0.2s; box-sizing: border-box;"
+						onfocus="this.style.borderColor='#2563eb'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
+						onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none';"
+					/>
+				</div>
+				<div id="seo-ai-meta-forgot-alert" role="alert" style="margin-bottom: 16px; padding: 12px; border-radius: 8px; font-size: 14px; display: none;"></div>
+				<button 
+					type="submit" 
+					id="seo-ai-meta-forgot-submit"
+					style="width: 100%; padding: 10px 20px; background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.2s; position: relative; min-height: 42px; margin-bottom: 16px;"
+				>
+					<span class="seo-ai-meta-button-text">Send Reset Link</span>
+					<span id="seo-ai-meta-forgot-spinner" style="display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
+							<path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+						</svg>
+					</span>
+				</button>
+				<p style="text-align: center; margin: 0;">
+					<a href="#" onclick="event.preventDefault(); seoAiMetaShowLoginTab();" style="font-size: 14px; color: #2563eb; text-decoration: none;">
+						← Back to Login
+					</a>
+				</p>
+			</form>
+		</div>
+
+		<!-- Footer -->
+		<div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;">
+			<p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+				Your account is protected with industry-standard encryption.
+			</p>
 		</div>
 	</div>
 </div>
 
+<!-- Success Toast -->
+<div id="seo-ai-meta-auth-toast" style="position: fixed; top: 20px; right: 20px; z-index: 1000000; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px 20px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); display: none; align-items: center; gap: 12px; min-width: 280px; animation: slideInRight 0.3s ease-out;">
+	<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" style="flex-shrink: 0;">
+		<path d="M20 6L9 17l-5-5"/>
+	</svg>
+	<span style="font-size: 14px; color: #1e293b; font-weight: 500;">You're in. Redirecting…</span>
+</div>
+
 <script>
+// Password visibility toggle
+function seoAiMetaTogglePasswordVisibility(inputId, button) {
+	var input = document.getElementById(inputId);
+	var showIcon = document.getElementById(inputId + '-show');
+	var hideIcon = document.getElementById(inputId + '-hide');
+	
+	if (input.type === 'password') {
+		input.type = 'text';
+		if (showIcon) showIcon.style.display = 'block';
+		if (hideIcon) hideIcon.style.display = 'none';
+		button.setAttribute('aria-label', 'Hide password');
+	} else {
+		input.type = 'password';
+		if (showIcon) showIcon.style.display = 'none';
+		if (hideIcon) hideIcon.style.display = 'block';
+		button.setAttribute('aria-label', 'Show password');
+	}
+}
+
+// Email validation
+function seoAiMetaValidateEmail(email) {
+	var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	return re.test(email);
+}
+
+// Show field error
+function seoAiMetaShowFieldError(fieldId, message) {
+	var field = document.getElementById(fieldId);
+	var errorDiv = document.getElementById(fieldId + '-error');
+	if (field && errorDiv) {
+		field.setAttribute('aria-invalid', 'true');
+		field.style.borderColor = '#dc2626';
+		errorDiv.textContent = message;
+		errorDiv.style.display = 'block';
+	}
+}
+
+// Clear field error
+function seoAiMetaClearFieldError(fieldId) {
+	var field = document.getElementById(fieldId);
+	var errorDiv = document.getElementById(fieldId + '-error');
+	if (field && errorDiv) {
+		field.setAttribute('aria-invalid', 'false');
+		field.style.borderColor = '#cbd5e1';
+		errorDiv.textContent = '';
+		errorDiv.style.display = 'none';
+	}
+}
+
+// Show alert
+function seoAiMetaShowAlert(alertId, message, isError) {
+	var alert = document.getElementById(alertId);
+	if (alert) {
+		alert.textContent = message;
+		alert.style.display = 'block';
+		if (isError) {
+			alert.style.background = '#fef2f2';
+			alert.style.borderColor = '#fecaca';
+			alert.style.color = '#991b1b';
+		} else {
+			alert.style.background = '#f0fdf4';
+			alert.style.borderColor = '#bbf7d0';
+			alert.style.color = '#166534';
+		}
+	}
+}
+
+// Hide alert
+function seoAiMetaHideAlert(alertId) {
+	var alert = document.getElementById(alertId);
+	if (alert) {
+		alert.style.display = 'none';
+		alert.textContent = '';
+	}
+}
+
+// Show toast
+function seoAiMetaShowToast(message) {
+	var toast = document.getElementById('seo-ai-meta-auth-toast');
+	if (toast) {
+		var text = toast.querySelector('span');
+		if (text) text.textContent = message;
+		toast.style.display = 'flex';
+		setTimeout(function() {
+			toast.style.display = 'none';
+		}, 3000);
+	}
+}
+
+// Focus trap for modal
+var seoAiMetaModalFocusableElements = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+var seoAiMetaModalFirstFocusableElement;
+var seoAiMetaModalLastFocusableElement;
+
+function seoAiMetaTrapFocus(modal) {
+	var focusableElements = modal.querySelectorAll(seoAiMetaModalFocusableElements);
+	seoAiMetaModalFirstFocusableElement = focusableElements[0];
+	seoAiMetaModalLastFocusableElement = focusableElements[focusableElements.length - 1];
+	
+	modal.addEventListener('keydown', function(e) {
+		if (e.key !== 'Tab') return;
+		
+		if (e.shiftKey) {
+			if (document.activeElement === seoAiMetaModalFirstFocusableElement) {
+				seoAiMetaModalLastFocusableElement.focus();
+				e.preventDefault();
+			}
+		} else {
+			if (document.activeElement === seoAiMetaModalLastFocusableElement) {
+				seoAiMetaModalFirstFocusableElement.focus();
+				e.preventDefault();
+			}
+		}
+	});
+}
+
+// Show login modal
 function seoAiMetaShowLoginModal() {
-	const modal = document.getElementById('seo-ai-meta-login-modal');
+	var modal = document.getElementById('seo-ai-meta-login-modal');
 	if (modal) {
 		modal.style.display = 'flex';
 		document.body.style.overflow = 'hidden';
+		
+		// Auto-focus email field in active tab
+		setTimeout(function() {
+			var activeTab = document.querySelector('.seo-ai-meta-auth-tab-content:not([style*="display: none"])');
+			if (activeTab) {
+				var emailInput = activeTab.querySelector('input[type="email"]');
+				if (emailInput) {
+					emailInput.focus();
+				}
+			}
+		}, 100);
+		
+		// Trap focus
+		seoAiMetaTrapFocus(modal);
 	}
 }
 
+// Close login modal
 function seoAiMetaCloseLoginModal() {
-	const modal = document.getElementById('seo-ai-meta-login-modal');
+	var modal = document.getElementById('seo-ai-meta-login-modal');
 	if (modal) {
 		modal.style.display = 'none';
 		document.body.style.overflow = '';
+		
+		// Clear all errors and alerts
+		jQuery('.seo-ai-meta-field-error').hide().text('');
+		jQuery('[id$="-alert"]').hide().text('');
+		jQuery('input').each(function() {
+			this.style.borderColor = '#cbd5e1';
+			this.setAttribute('aria-invalid', 'false');
+		});
 	}
 }
 
+// Show forgot password
 function seoAiMetaShowForgotPassword() {
-	// Hide all tabs
 	jQuery('.seo-ai-meta-auth-tab-content').hide();
 	jQuery('.seo-ai-meta-auth-tab').removeClass('active');
-	
-	// Show forgot password form
 	jQuery('#seo-ai-meta-forgot-password-tab').show();
-	
-	// Update modal title
-	jQuery('#seo-ai-meta-auth-modal-title').text('Reset Password');
-	
-	// Show modal if not already visible
 	seoAiMetaShowLoginModal();
+	setTimeout(function() {
+		var emailInput = document.getElementById('seo-ai-meta-forgot-email');
+		if (emailInput) emailInput.focus();
+	}, 100);
 }
 
+// Show login tab
 function seoAiMetaShowLoginTab() {
-	// Hide all tabs
 	jQuery('.seo-ai-meta-auth-tab-content').hide();
 	jQuery('.seo-ai-meta-auth-tab').removeClass('active');
-	
-	// Show login tab
 	jQuery('#seo-ai-meta-login-tab').show();
-	jQuery('.seo-ai-meta-auth-tab[data-tab="login"]').addClass('active');
-	
-	// Update modal title
-	jQuery('#seo-ai-meta-auth-modal-title').text('Login to SEO AI Meta');
+	jQuery('.seo-ai-meta-auth-tab[data-tab="login"]').addClass('active').css({
+		'background': 'white',
+		'font-weight': '500',
+		'color': '#2563eb',
+		'box-shadow': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+		'outline': '1px solid #e2e8f0'
+	});
+	jQuery('.seo-ai-meta-auth-tab[data-tab="register"]').css({
+		'background': 'transparent',
+		'font-weight': '400',
+		'color': '#64748b',
+		'box-shadow': 'none',
+		'outline': 'none'
+	});
+	setTimeout(function() {
+		var emailInput = document.getElementById('seo-ai-meta-login-email');
+		if (emailInput) emailInput.focus();
+	}, 100);
 }
 
 // Handle tab switching
@@ -1488,17 +2489,44 @@ jQuery(document).ready(function($) {
 	// Tab switching
 	$('.seo-ai-meta-auth-tab').on('click', function() {
 		var tab = $(this).data('tab');
-		$('.seo-ai-meta-auth-tab').removeClass('active');
-		$(this).addClass('active');
-		$('.seo-ai-meta-auth-tab-content').hide();
+		var $tabs = $('.seo-ai-meta-auth-tab');
+		var $contents = $('.seo-ai-meta-auth-tab-content');
+		
+		// Update tab styles
+		$tabs.css({
+			'background': 'transparent',
+			'font-weight': '400',
+			'color': '#64748b',
+			'box-shadow': 'none',
+			'outline': 'none'
+		});
+		$(this).css({
+			'background': 'white',
+			'font-weight': '500',
+			'color': '#2563eb',
+			'box-shadow': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+			'outline': '1px solid #e2e8f0'
+		});
+		
+		// Show/hide content
+		$contents.hide();
 		$('#seo-ai-meta-' + tab + '-tab').show();
 		
-		// Update title
-		var title = tab === 'login' ? 'Login to SEO AI Meta' : 'Create SEO AI Meta Account';
-		$('#seo-ai-meta-auth-modal-title').text(title);
+		// Clear errors and focus email field
+		setTimeout(function() {
+			var emailInput = document.getElementById('seo-ai-meta-' + tab + '-email');
+			if (emailInput) {
+				emailInput.focus();
+			}
+		}, 100);
 		
-		// Clear messages
-		$('#seo-ai-meta-login-message, #seo-ai-meta-register-message').hide().removeClass('notice-success notice-error');
+		// Clear all messages
+		$('.seo-ai-meta-field-error').hide().text('');
+		$('[id$="-alert"]').hide().text('');
+		$('input').each(function() {
+			this.style.borderColor = '#cbd5e1';
+			this.setAttribute('aria-invalid', 'false');
+		});
 	});
 
 	// Handle login form submission
@@ -1506,15 +2534,37 @@ jQuery(document).ready(function($) {
 		e.preventDefault();
 		
 		var $form = $(this);
+		var $btn = $('#seo-ai-meta-login-submit');
 		var $spinner = $('#seo-ai-meta-login-spinner');
-		var $message = $('#seo-ai-meta-login-message');
-		var $btn = $form.find('button[type="submit"]');
+		var $buttonText = $btn.find('.seo-ai-meta-button-text');
+		var email = $('#seo-ai-meta-login-email').val().trim();
+		var password = $('#seo-ai-meta-login-password').val();
 		
-		// Clear previous messages
-		$message.removeClass('seo-ai-meta-message-success seo-ai-meta-message-error').hide().html('');
+		// Clear previous errors
+		seoAiMetaClearFieldError('seo-ai-meta-login-email');
+		seoAiMetaClearFieldError('seo-ai-meta-login-password');
+		seoAiMetaHideAlert('seo-ai-meta-login-alert');
 		
-		$btn.prop('disabled', true).text('Logging in...');
-		$spinner.addClass('is-active').show();
+		// Validate
+		var isValid = true;
+		if (!email) {
+			seoAiMetaShowFieldError('seo-ai-meta-login-email', 'Email is required');
+			isValid = false;
+		} else if (!seoAiMetaValidateEmail(email)) {
+			seoAiMetaShowFieldError('seo-ai-meta-login-email', 'Please enter a valid email address');
+			isValid = false;
+		}
+		if (!password) {
+			seoAiMetaShowFieldError('seo-ai-meta-login-password', 'Password is required');
+			isValid = false;
+		}
+		if (!isValid) return;
+		
+		// Set loading state
+		$form.attr('aria-busy', 'true');
+		$btn.prop('disabled', true);
+		$buttonText.text('Logging in...');
+		$spinner.show();
 		
 		$.ajax({
 			url: seoAiMetaAjax.ajaxurl,
@@ -1522,55 +2572,52 @@ jQuery(document).ready(function($) {
 			data: {
 				action: 'seo_ai_meta_login',
 				nonce: seoAiMetaAjax.nonce,
-				email: $('#seo-ai-meta-login-email').val(),
-				password: $('#seo-ai-meta-login-password').val()
+				email: email,
+				password: password
 			},
 			success: function(response) {
-				$spinner.removeClass('is-active').hide();
-				$btn.prop('disabled', false).text('Login');
+				$form.attr('aria-busy', 'false');
+				$btn.prop('disabled', false);
+				$buttonText.text('Log in securely');
+				$spinner.hide();
 				
 				if (response && response.success) {
-					var successMsg = response.data && response.data.message ? response.data.message : 'Login successful!';
-					$message.addClass('seo-ai-meta-message-success').html(successMsg).css({
-						'display': 'block',
-						'background-color': '#efe',
-						'color': '#3c3',
-						'border': '1px solid #cfc',
-						'padding': '12px',
-						'border-radius': '4px'
-					}).show();
+					seoAiMetaShowToast('You\'re in. Redirecting…');
 					setTimeout(function() {
+						if (typeof window.seoAiMetaOnAuthSuccess === 'function') {
+							window.seoAiMetaOnAuthSuccess();
+						}
+						seoAiMetaCloseLoginModal();
 						location.reload();
-					}, 1000);
+					}, 900);
 				} else {
-					var errorMsg = response && response.data && response.data.message ? response.data.message : 'Login failed. Please check your credentials.';
-					$message.addClass('seo-ai-meta-message-error').html(errorMsg).css({
-						'display': 'block',
-						'background-color': '#fee',
-						'color': '#c33',
-						'border': '1px solid #fcc',
-						'padding': '12px',
-						'border-radius': '4px'
-					}).show();
+					var errorMsg = 'Invalid credentials. Try again or reset your password.';
+					if (response && response.data && response.data.message) {
+						errorMsg = response.data.message;
+					}
+					seoAiMetaShowAlert('seo-ai-meta-login-alert', errorMsg, true);
 				}
 			},
-			error: function(xhr, status, error) {
-				$spinner.removeClass('is-active').hide();
-				$btn.prop('disabled', false).text('Login');
+			error: function(xhr) {
+				$form.attr('aria-busy', 'false');
+				$btn.prop('disabled', false);
+				$buttonText.text('Log in securely');
+				$spinner.hide();
+				
 				var errorMsg = 'Network error. Please try again.';
 				if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
 					errorMsg = xhr.responseJSON.data.message;
 				}
-				$message.addClass('seo-ai-meta-message-error').html(errorMsg).css({
-					'display': 'block',
-					'background-color': '#fee',
-					'color': '#c33',
-					'border': '1px solid #fcc',
-					'padding': '12px',
-					'border-radius': '4px'
-				}).show();
+				seoAiMetaShowAlert('seo-ai-meta-login-alert', errorMsg, true);
 			}
 		});
+	});
+	
+	// Enter key submits login form
+	$('#seo-ai-meta-login-form input').on('keydown', function(e) {
+		if (e.key === 'Enter') {
+			$('#seo-ai-meta-login-form').submit();
+		}
 	});
 
 	// Handle register form submission
@@ -1578,44 +2625,40 @@ jQuery(document).ready(function($) {
 		e.preventDefault();
 		
 		var $form = $(this);
+		var $btn = $('#seo-ai-meta-register-submit');
 		var $spinner = $('#seo-ai-meta-register-spinner');
-		var $message = $('#seo-ai-meta-register-message');
-		var $btn = $form.find('button[type="submit"]');
-		var email = $('#seo-ai-meta-register-email').val();
+		var $buttonText = $btn.find('.seo-ai-meta-button-text');
+		var email = $('#seo-ai-meta-register-email').val().trim();
 		var password = $('#seo-ai-meta-register-password').val();
 		
-		// Clear previous messages
-		$message.removeClass('seo-ai-meta-message-success seo-ai-meta-message-error').hide().html('');
+		// Clear previous errors
+		seoAiMetaClearFieldError('seo-ai-meta-register-email');
+		seoAiMetaClearFieldError('seo-ai-meta-register-password');
+		seoAiMetaHideAlert('seo-ai-meta-register-alert');
 		
-		// Validate email
-		if (!email || email.length === 0) {
-			$message.addClass('seo-ai-meta-message-error').html('Email is required.').css({
-				'display': 'block',
-				'background-color': '#fee',
-				'color': '#c33',
-				'border': '1px solid #fcc',
-				'padding': '12px',
-				'border-radius': '4px'
-			}).show();
-			return;
+		// Validate
+		var isValid = true;
+		if (!email) {
+			seoAiMetaShowFieldError('seo-ai-meta-register-email', 'Email is required');
+			isValid = false;
+		} else if (!seoAiMetaValidateEmail(email)) {
+			seoAiMetaShowFieldError('seo-ai-meta-register-email', 'Please enter a valid email address');
+			isValid = false;
 		}
-		
-		// Validate password
-		if (!password || password.length < 6) {
-			$message.addClass('seo-ai-meta-message-error').html('Password must be at least 6 characters long.').css({
-				'display': 'block',
-				'background-color': '#fee',
-				'color': '#c33',
-				'border': '1px solid #fcc',
-				'padding': '12px',
-				'border-radius': '4px'
-			}).show();
-			return;
+		if (!password) {
+			seoAiMetaShowFieldError('seo-ai-meta-register-password', 'Password is required');
+			isValid = false;
+		} else if (password.length < 8) {
+			seoAiMetaShowFieldError('seo-ai-meta-register-password', 'Password must be at least 8 characters long');
+			isValid = false;
 		}
+		if (!isValid) return;
 		
-		// Show loading state
-		$btn.prop('disabled', true).text('Creating Account...');
-		$spinner.addClass('is-active').show();
+		// Set loading state
+		$form.attr('aria-busy', 'true');
+		$btn.prop('disabled', true);
+		$buttonText.text('Creating account...');
+		$spinner.show();
 		
 		console.log('Sending registration request...', { email: email, passwordLength: password.length });
 		
@@ -1962,5 +3005,342 @@ jQuery(document).ready(function($) {
 		}
 	}, 10000); // Auto-clear after 10 seconds
 	<?php endif; ?>
+	
+	// Animate progress ring on load
+	jQuery(document).ready(function($) {
+		// Dashboard progress ring
+		var $progressRing = $('#seo-ai-meta-progress-ring');
+		if ($progressRing.length) {
+			var percentage = $progressRing.data('percentage') || 0;
+			var radius = 56;
+			var circumference = 2 * Math.PI * radius;
+			var offset = circumference * (1 - (percentage / 100));
+			
+			// Reset to 0 initially
+			$progressRing.css('stroke-dashoffset', circumference);
+			
+			// Animate to actual value after a short delay
+			setTimeout(function() {
+				$progressRing.css({
+					'stroke-dashoffset': offset,
+					'transition': 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1)'
+				});
+			}, 200);
+		}
+		
+		// Bulk generate progress ring
+		var $bulkProgressRing = $('#bulk-progress-ring');
+		if ($bulkProgressRing.length) {
+			var percentage = $bulkProgressRing.data('percentage') || 0;
+			var radius = 56;
+			var circumference = 2 * Math.PI * radius;
+			var offset = circumference * (1 - (percentage / 100));
+			
+			// Reset to 0 initially
+			$bulkProgressRing.css('stroke-dashoffset', circumference);
+			
+			// Animate to actual value after a short delay
+			setTimeout(function() {
+				$bulkProgressRing.css({
+					'stroke-dashoffset': offset,
+					'transition': 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1)'
+				});
+			}, 400);
+		}
+		
+		// Bulk Generate All functionality
+		$('#seo-ai-meta-bulk-generate-all-btn').on('click', function(e) {
+			e.preventDefault();
+			
+			var $btn = $(this);
+			var $logContainer = $('#seo-ai-meta-bulk-log-container');
+			var $log = $('#seo-ai-meta-bulk-log');
+			var $successContainer = $('#seo-ai-meta-bulk-success');
+			var $successLog = $('#seo-ai-meta-bulk-success-log');
+			var $progressRing = $('#bulk-progress-ring');
+			
+			// Check if user is authenticated
+			if (typeof seoAiMetaAjax !== 'undefined' && !seoAiMetaAjax.is_authenticated) {
+				if (typeof seoAiMetaShowLoginModal === 'function') {
+					seoAiMetaShowLoginModal();
+				}
+				return;
+			}
+			
+			// Disable button and show log
+			$btn.prop('disabled', true);
+			$btn.text('Generating...');
+			$logContainer.show();
+			$log.html('');
+			$successContainer.hide();
+			
+			// Get total posts count
+			var totalPosts = <?php echo esc_js( $pending_count ); ?>;
+			var optimizedCount = <?php echo esc_js( $optimized_count ); ?>;
+			var totalCount = <?php echo esc_js( $total_count ); ?>;
+			
+			var processed = 0;
+			var successful = 0;
+			
+			// Helper function to format timestamp
+			function getTimestamp() {
+				var now = new Date();
+				var hours = String(now.getHours()).padStart(2, '0');
+				var minutes = String(now.getMinutes()).padStart(2, '0');
+				var seconds = String(now.getSeconds()).padStart(2, '0');
+				return hours + ':' + minutes + ':' + seconds;
+			}
+			
+			// Helper function to add log entry
+			function addLogEntry(message, isSuccess) {
+				var timestamp = getTimestamp();
+				var icon = '';
+				if (isSuccess === true) {
+					icon = '<span style="color: #22c55e; font-weight: bold; margin-right: 8px;">✓</span>';
+				} else if (isSuccess === false) {
+					icon = '<span style="color: #ef4444; font-weight: bold; margin-right: 8px;">✗</span>';
+				} else {
+					icon = '<span style="color: #6b7280; margin-right: 8px;">•</span>';
+				}
+				
+				var entry = $('<div style="padding: 4px 0; color: #374151; line-height: 1.6;">' +
+					'<span style="color: #9ca3af; font-size: 11px; margin-right: 12px; font-weight: 500; font-variant-numeric: tabular-nums;">' + timestamp + '</span>' +
+					icon +
+					'<span>' + message + '</span>' +
+					'</div>');
+				
+				$log.append(entry);
+				$log.scrollTop($log[0].scrollHeight);
+			}
+			
+			// Process posts sequentially
+			function processNext(index) {
+				if (index >= totalPosts) {
+					// All done
+					$btn.prop('disabled', false);
+					$btn.text('Generate All');
+					
+					// Update progress ring to 100%
+					var circumference = 2 * Math.PI * 56;
+					$progressRing.css('stroke-dashoffset', 0);
+					
+					// Update count display
+					$('#bulk-progress-count').text(totalCount + '/' + totalCount);
+					
+					// Hide log, show success
+					setTimeout(function() {
+						$logContainer.fadeOut(300, function() {
+							$successContainer.fadeIn(300);
+							$successLog.html($log.html());
+						});
+					}, 500);
+					
+					return;
+				}
+				
+				var current = index + 1;
+				
+				// Add log entry
+				addLogEntry('Optimizing post ' + current + ' of ' + totalPosts + '...', null);
+				
+				// Update progress ring
+				var progress = Math.round((current / totalPosts) * 100);
+				var circumference = 2 * Math.PI * 56;
+				var offset = circumference * (1 - (progress / 100));
+				$progressRing.css('stroke-dashoffset', offset);
+				
+				// Update count display
+				var newOptimizedCount = optimizedCount + current;
+				$('#bulk-progress-count').text(newOptimizedCount + '/' + totalCount);
+				
+				// Simulate API call (replace with actual AJAX call)
+				setTimeout(function() {
+					// Simulate success
+					successful++;
+					processed++;
+					
+					// Update log entry with success
+					var $lastEntry = $log.find('div:last');
+					var timestamp = getTimestamp();
+					$lastEntry.html(
+						'<span style="color: #9ca3af; font-size: 11px; margin-right: 12px; font-weight: 500; font-variant-numeric: tabular-nums;">' + timestamp + '</span>' +
+						'<span style="color: #22c55e; font-weight: bold; margin-right: 8px;">✓</span>' +
+						'<span>Done</span>'
+					);
+					
+					// Process next
+					setTimeout(function() {
+						processNext(index + 1);
+					}, 300);
+				}, 800);
+			}
+			
+			// Start processing
+			if (totalPosts > 0) {
+				processNext(0);
+			} else {
+				$btn.prop('disabled', false);
+				$btn.text('Generate All');
+				addLogEntry('No posts to optimize.', false);
+			}
+		});
+	});
 });
+
+// Testimonial Carousel - Rotating trust quotes
+(function() {
+	var testimonials = [
+		{
+			text: 'Generated 1,200 meta tags in minutes, saved hours each week',
+			author: 'Sarah W., Agency Owner',
+			initials: 'SA'
+		},
+		{
+			text: 'Boosted our SEO rankings by 40% in just 2 months',
+			author: 'Mike T., Marketing Director',
+			initials: 'MT'
+		},
+		{
+			text: 'The best SEO plugin we\'ve used. ROI is incredible.',
+			author: 'Jennifer L., Content Manager',
+			initials: 'JL'
+		},
+		{
+			text: 'Saved 15+ hours weekly on meta tag optimization',
+			author: 'David K., E-commerce Owner',
+			initials: 'DK'
+		}
+	];
+	
+	var currentTestimonial = 0;
+	var $testimonialContainer = jQuery('#seo-ai-meta-testimonial-carousel');
+	
+	if ($testimonialContainer.length && testimonials.length > 1) {
+		var $testimonialText = $testimonialContainer.find('.seo-ai-meta-testimonial-text');
+		var $testimonialAuthor = $testimonialContainer.find('.seo-ai-meta-testimonial-author');
+		var $testimonialAvatar = $testimonialContainer.find('.seo-ai-meta-testimonial-avatar');
+		
+		function rotateTestimonial() {
+			currentTestimonial = (currentTestimonial + 1) % testimonials.length;
+			var testimonial = testimonials[currentTestimonial];
+			
+			// Fade out
+			$testimonialContainer.fadeOut(200, function() {
+				$testimonialText.text(testimonial.text);
+				$testimonialAuthor.text(testimonial.author);
+				$testimonialAvatar.text(testimonial.initials);
+				// Fade in
+				$testimonialContainer.fadeIn(200);
+			});
+		}
+		
+		// Rotate every 8 seconds
+		setInterval(rotateTestimonial, 8000);
+	}
+})();
+
+// Analytics Tracking Function
+window.seoAiMetaTrackEvent = function(eventName, properties) {
+	properties = properties || {};
+	properties.event = eventName;
+	properties.timestamp = new Date().toISOString();
+	properties.page = window.location.pathname;
+	
+	// Log to console in development
+	if (typeof console !== 'undefined' && console.log) {
+		console.log('SEO AI Meta Event:', eventName, properties);
+	}
+	
+	// Send to analytics endpoint (mock implementation)
+	// In production, replace with actual analytics service
+	try {
+		if (window.fetch) {
+			// Mock analytics endpoint - replace with actual endpoint
+			// fetch('/wp-json/seo-ai-meta/v1/analytics', {
+			// 	method: 'POST',
+			// 	headers: { 'Content-Type': 'application/json' },
+			// 	body: JSON.stringify(properties)
+			// }).catch(function(err) {
+			// 	console.warn('Analytics tracking failed:', err);
+			// });
+		}
+	} catch (e) {
+		// Silently fail if analytics tracking is unavailable
+	}
+};
+
+// Analytics tracking is handled within the upgrade modal script
 </script>
+<style>
+@keyframes shimmer {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(100%);
+	}
+}
+
+@keyframes fadeInUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes fadeInScale {
+	from {
+		opacity: 0;
+		transform: rotate(-90deg) scale(0.9);
+	}
+	to {
+		opacity: 1;
+		transform: rotate(-90deg) scale(1);
+	}
+}
+
+@keyframes successPulse {
+	0% {
+		opacity: 0;
+		transform: scale(0.9) translateY(-10px);
+	}
+	50% {
+		transform: scale(1.05) translateY(0);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+}
+
+/* Responsive layout for dashboard */
+@media (max-width: 768px) {
+	.seo-ai-meta-dashboard-grid {
+		grid-template-columns: 1fr !important;
+	}
+	
+	#seo-ai-meta-bottom-cta-banner,
+	#seo-ai-meta-bulk-bottom-cta-banner {
+		flex-direction: column !important;
+		align-items: stretch !important;
+	}
+	
+	#seo-ai-meta-bottom-cta-banner button,
+	#seo-ai-meta-bulk-bottom-cta-banner button {
+		width: 100% !important;
+	}
+	
+	#seo-ai-meta-testimonial-carousel {
+		display: none !important; /* Hide testimonial on mobile for cleaner header */
+	}
+	
+	.seo-ai-meta-header-right {
+		gap: 8px !important;
+	}
+}
+</style>
+

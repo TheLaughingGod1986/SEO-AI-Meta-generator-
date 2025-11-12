@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Button Test</title>
+</head>
+<body>
+    <h1>Button Function Test</h1>
+    
+    <button onclick="alert('Basic onclick works!')">Test 1: Basic onClick</button><br><br>
+    
+    <button onclick="testFunction()">Test 2: Function call</button><br><br>
+    
+    <button onclick="console.log('Inline console.log'); seoAiMetaShowUpgradeModal();">Test 3: Modal Function</button><br><br>
+    
+    <div id="output"></div>
+    
+    <script>
+        function testFunction() {
+            alert('testFunction() works!');
+            document.getElementById('output').innerHTML += '<p>testFunction called</p>';
+        }
+        
+        // Simulate what should be defined
+        window.seoAiMetaShowUpgradeModal = function() {
+            alert('seoAiMetaShowUpgradeModal called!');
+            document.getElementById('output').innerHTML += '<p>seoAiMetaShowUpgradeModal called</p>';
+        };
+        
+        // Test on page load
+        console.log('Functions available:', {
+            testFunction: typeof testFunction,
+            seoAiMetaShowUpgradeModal: typeof window.seoAiMetaShowUpgradeModal
+        });
+    </script>
+</body>
+</html>

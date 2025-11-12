@@ -1368,6 +1368,61 @@
 	pointer-events: none;
 }
 
+/* Settings Page Range Sliders */
+input[type="range"] {
+	-webkit-appearance: none;
+	appearance: none;
+	background: transparent;
+	cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-track {
+	background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+	height: 8px;
+	border-radius: 4px;
+}
+
+input[type="range"]::-moz-range-track {
+	background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+	height: 8px;
+	border-radius: 4px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	background: white;
+	border: 2px solid #10b981;
+	border-radius: 50%;
+	width: 20px;
+	height: 20px;
+	margin-top: -6px;
+	cursor: pointer;
+	box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+	transition: all 0.2s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+	transform: scale(1.1);
+	box-shadow: 0 4px 6px rgba(16, 185, 129, 0.4);
+}
+
+input[type="range"]::-moz-range-thumb {
+	background: white;
+	border: 2px solid #10b981;
+	border-radius: 50%;
+	width: 20px;
+	height: 20px;
+	cursor: pointer;
+	box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+	transition: all 0.2s;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+	transform: scale(1.1);
+	box-shadow: 0 4px 6px rgba(16, 185, 129, 0.4);
+}
+
 /* Print styles */
 @media print {
 	.seo-ai-meta-dashboard-header,
@@ -1377,144 +1432,4 @@
 	.seo-ai-meta-modal-backdrop {
 		display: none !important;
 	}
-}
-
-/* ===================================================================
-   SHIMMER ANIMATION FOR UPGRADE CARD
-   =================================================================== */
-@keyframes shimmer {
-	0% {
-		transform: translateX(-100%);
-		opacity: 0;
-	}
-	50% {
-		opacity: 1;
-	}
-	100% {
-		transform: translateX(100%);
-		opacity: 0;
-	}
-}
-
-.seo-ai-meta-shimmer {
-	background: linear-gradient(
-		90deg,
-		transparent,
-		rgba(255, 255, 255, 0.3),
-		transparent
-	);
-	animation: shimmer 3s ease-in-out infinite;
-}
-
-.seo-ai-meta-upgrade-card:hover .seo-ai-meta-shimmer {
-	opacity: 1;
-}
-
-/* Pulse animation every 6 seconds */
-@keyframes pulse-shimmer {
-	0%, 90%, 100% {
-		opacity: 0;
-	}
-	5%, 85% {
-		opacity: 1;
-	}
-}
-
-.seo-ai-meta-shimmer {
-	animation: shimmer 3s ease-in-out infinite, pulse-shimmer 6s ease-in-out infinite;
-}
-
-/* ===================================================================
-   FADE IN ANIMATION
-   =================================================================== */
-@keyframes fade-in {
-	from {
-		opacity: 0;
-		transform: translateY(10px);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
-}
-
-.animate-fade-in {
-	animation: fade-in 0.5s ease-out;
-}
-
-/* ===================================================================
-   TAILWIND UTILITY OVERRIDES (for compatibility)
-   =================================================================== */
-.seo-ai-meta-dashboard-content .grid {
-	display: grid;
-}
-
-.seo-ai-meta-dashboard-content .grid-cols-1 {
-	grid-template-columns: repeat(1, minmax(0, 1fr));
-}
-
-@media (min-width: 1024px) {
-	.seo-ai-meta-dashboard-content .lg\:grid-cols-\[1fr_320px\] {
-		grid-template-columns: 1fr 320px;
-	}
-	
-	.seo-ai-meta-dashboard-content .lg\:sticky {
-		position: sticky;
-	}
-	
-	.seo-ai-meta-dashboard-content .lg\:top-5 {
-		top: 1.25rem;
-	}
-}
-
-@media (min-width: 768px) {
-	.seo-ai-meta-dashboard-content .md\:flex-row {
-		flex-direction: row;
-	}
-	
-	.seo-ai-meta-dashboard-content .md\:items-center {
-		align-items: center;
-	}
-}
-
-/* ===================================================================
-   SUCCESS ANIMATION
-   =================================================================== */
-@keyframes success-bounce {
-	0%, 100% {
-		transform: translateY(0);
-	}
-	50% {
-		transform: translateY(-10px);
-	}
-}
-
-.seo-ai-meta-success-animation {
-	animation: success-bounce 0.6s ease-in-out;
-}
-
-/* ===================================================================
-   BULK GENERATE LOG STYLING
-   =================================================================== */
-#seo-ai-meta-bulk-log {
-	scrollbar-width: thin;
-	scrollbar-color: #cbd5e1 #f1f5f9;
-}
-
-#seo-ai-meta-bulk-log::-webkit-scrollbar {
-	width: 6px;
-}
-
-#seo-ai-meta-bulk-log::-webkit-scrollbar-track {
-	background: #f1f5f9;
-	border-radius: 3px;
-}
-
-#seo-ai-meta-bulk-log::-webkit-scrollbar-thumb {
-	background: #cbd5e1;
-	border-radius: 3px;
-}
-
-#seo-ai-meta-bulk-log::-webkit-scrollbar-thumb:hover {
-	background: #94a3b8;
 }

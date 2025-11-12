@@ -53,15 +53,6 @@ class SEO_AI_Meta_Admin {
 		if ( in_array( $hook, $plugin_pages, true ) || 
 		     strpos( $hook, $this->plugin_name ) !== false ||
 		     ( isset( $_GET['page'] ) && strpos( $_GET['page'], $this->plugin_name ) !== false ) ) {
-			// Add Tailwind CSS via Play CDN (compiled version)
-			wp_enqueue_script(
-				'tailwindcss',
-				'https://cdn.tailwindcss.com',
-				array(),
-				'3.4.0',
-				false
-			);
-			
 			// Add Google Fonts (Inter)
 			wp_enqueue_style(
 				'google-fonts-inter',
@@ -87,11 +78,29 @@ class SEO_AI_Meta_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts( $hook ) {
+		// Load auth modal FIRST so its functions are available
+		wp_enqueue_script(
+			$this->plugin_name . '-auth-modal',
+			SEO_AI_META_PLUGIN_URL . 'assets/seo-ai-meta-auth-modal.js',
+			array( 'wp-element' ),
+			$this->version,
+			false  // Load in header so functions are available when buttons render
+		);
+
+		// Load helper functions (depends on auth-modal being loaded first)
+		wp_enqueue_script(
+			$this->plugin_name . '-helpers',
+			SEO_AI_META_PLUGIN_URL . 'assets/seo-ai-meta-helpers.js',
+			array( 'jquery', $this->plugin_name . '-auth-modal' ),
+			$this->version,
+			false
+		);
+
 		// Always load dashboard script
 		wp_enqueue_script(
 			$this->plugin_name . '-dashboard',
 			SEO_AI_META_PLUGIN_URL . 'assets/seo-ai-meta-dashboard.js',
-			array( 'jquery' ),
+			array( 'jquery', $this->plugin_name . '-helpers' ),
 			$this->version,
 			false
 		);
@@ -119,7 +128,7 @@ class SEO_AI_Meta_Admin {
 
 		// Localize script with AJAX URL and nonce for dashboard and bulk pages
 		wp_localize_script(
-			$this->plugin_name . '-dashboard',
+			$this->plugin_name . '-helpers',
 			'seoAiMetaAjax',
 			array(
 				'ajaxurl' => admin_url( 'admin-ajax.php' ),
@@ -284,6 +293,48 @@ class SEO_AI_Meta_Admin {
 
 		if ( isset( $input['description_max_length'] ) ) {
 			$output['description_max_length'] = max( 120, min( 200, intval( $input['description_max_length'] ) ) );
+		}
+
+		// License mode (admin only)
+		if ( isset( $input['license_mode'] ) && current_user_can( 'manage_options' ) ) {
+			$valid_modes = array( 'per-user', 'site-wide' );
+			if ( in_array( $input['license_mode'], $valid_modes, true ) ) {
+				$output['license_mode'] = $input['license_mode'];
+
+				// Store license mode in Site_License class
+				require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+				SEO_AI_Meta_Site_License::set_license_mode( $input['license_mode'] );
+			}
+		}
+
+		// Site API key (admin only, only for site-wide mode)
+		if ( isset( $input['site_api_key'] ) && current_user_can( 'manage_options' ) ) {
+			$api_key = sanitize_text_field( trim( $input['site_api_key'] ) );
+
+			if ( ! empty( $api_key ) ) {
+				// Validate API key format (basic check)
+				require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+				if ( SEO_AI_Meta_Site_License::validate_api_key_format( $api_key ) ) {
+					$output['site_api_key'] = $api_key;
+					SEO_AI_Meta_Site_License::set_site_api_key( $api_key );
+				} else {
+					add_settings_error(
+						'seo_ai_meta_settings',
+						'invalid_api_key',
+						__( 'Invalid API key format. Please check and try again.', 'seo-ai-meta-generator' ),
+						'error'
+					);
+				}
+			} else {
+				// Allow clearing the API key
+				$output['site_api_key'] = '';
+				SEO_AI_Meta_Site_License::clear_site_api_key();
+			}
+		}
+
+		// Auto-generate (preserve existing value in output array for display)
+		if ( isset( $input['auto_generate'] ) ) {
+			$output['auto_generate'] = (bool) $input['auto_generate'];
 		}
 
 		// Preserve existing settings

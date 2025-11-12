@@ -56,9 +56,17 @@ class SEO_AI_Meta_Generator {
 
 		// Determine model based on plan if not specified
 		if ( ! $model ) {
-			$user_id = get_current_user_id();
-			$plan    = get_user_meta( $user_id, 'seo_ai_meta_plan', true ) ?: 'free';
-			$model   = ( $plan === 'pro' || $plan === 'agency' ) ? 'gpt-4-turbo' : 'gpt-4o-mini';
+			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+
+			// Get plan based on license mode
+			if ( SEO_AI_Meta_Site_License::is_site_wide_mode() ) {
+				$plan = SEO_AI_Meta_Site_License::get_site_plan();
+			} else {
+				$user_id = get_current_user_id();
+				$plan    = get_user_meta( $user_id, 'seo_ai_meta_plan', true ) ?: 'free';
+			}
+
+			$model = ( $plan === 'pro' || $plan === 'agency' ) ? 'gpt-4-turbo' : 'gpt-4o-mini';
 		}
 
 		// Prefer backend API if authenticated, otherwise use local OpenAI client
@@ -78,11 +86,20 @@ class SEO_AI_Meta_Generator {
 			// Only try local if user has configured an API key
 			$local_result = $this->openai_client->generate_meta( $post_id, $model );
 			if ( is_wp_error( $local_result ) && $local_result->get_error_code() === 'no_api_key' ) {
-				// No local key and backend not available - show helpful error
-				return new WP_Error( 
-					'no_api_available', 
-					__( 'Please authenticate with the backend to use the service. Go to SEO AI Meta → Dashboard to log in.', 'seo-ai-meta-generator' )
-				);
+				// No local key and backend not available - show helpful error based on license mode
+				require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-site-license.php';
+
+				if ( SEO_AI_Meta_Site_License::is_site_wide_mode() ) {
+					return new WP_Error(
+						'no_api_available',
+						__( 'Site license is not configured. Please contact your site administrator to activate the site license in SEO AI Meta → Settings.', 'seo-ai-meta-generator' )
+					);
+				} else {
+					return new WP_Error(
+						'no_api_available',
+						__( 'Please authenticate with the backend to use the service. Go to SEO AI Meta → Dashboard to log in.', 'seo-ai-meta-generator' )
+					);
+				}
 			}
 			$result = $local_result;
 		}
