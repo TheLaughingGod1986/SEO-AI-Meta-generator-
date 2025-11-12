@@ -694,26 +694,12 @@ if ( empty( $settings ) ) {
 			</div>
 			<?php endif; ?>
 
-		<?php elseif ( $tab === 'bulk' ) : ?>
-			<?php
-			// Calculate progress stats
-			$optimized_count = $posts_with_meta;
-			$total_count = $total_posts;
-			$pending_count = $posts_without_meta;
-			$progress_percentage = $total_count > 0 ? round( ( $optimized_count / $total_count ) * 100 ) : 0;
-			
-			// Check if user is authenticated
-			require_once SEO_AI_META_PLUGIN_DIR . 'includes/class-api-client-v2.php';
-			$api_client = new SEO_AI_Meta_API_Client_V2();
-			$is_authenticated = $api_client->is_authenticated();
-			
-			// Calculate circumference and offset for progress ring
-			$radius = 56;
-			$circumference = 2 * M_PI * $radius;
-			$offset = $circumference * ( 1 - ( $progress_percentage / 100 ) );
-			?>
-			
-			<!-- Bulk Generate Tab - Redesigned -->
+	<?php elseif ( $tab === 'bulk' ) : ?>
+		<?php require_once SEO_AI_META_PLUGIN_DIR . 'templates/bulk-tab-enhanced.php'; ?>
+
+	<?php elseif ( $tab === 'old_bulk_removed' ) : ?>
+		<!-- Old bulk tab code removed and replaced with enhanced version -->
+		<!-- Keeping this placeholder for reference during development -->
 			<div>
 				<!-- Two Column Layout -->
 				<div style="display: grid; grid-template-columns: 1fr 320px; gap: 24px; margin-bottom: 32px;">
@@ -2236,20 +2222,22 @@ function seoAiMetaTrapFocus(modal) {
 
 // Show upgrade modal (or login modal if not authenticated)
 function seoAiMetaShowUpgradeModal() {
-	// Check if user is authenticated
-	<?php if ( ! $is_authenticated ) : ?>
+	// Check if user is authenticated via PHP variable
+	var isAuthenticated = <?php echo $is_authenticated ? 'true' : 'false'; ?>;
+	
+	if (!isAuthenticated) {
 		// Not authenticated, show login modal
 		if (typeof seoAiMetaShowLoginModal === 'function') {
 			seoAiMetaShowLoginModal();
 		}
-	<?php else : ?>
+	} else {
 		// Authenticated, show upgrade modal
 		var modal = document.getElementById('seo-ai-meta-upgrade-modal');
 		if (modal) {
 			modal.style.display = 'flex';
 			document.body.style.overflow = 'hidden';
 		}
-	<?php endif; ?>
+	}
 }
 
 // Close upgrade modal (alias for compatibility)
